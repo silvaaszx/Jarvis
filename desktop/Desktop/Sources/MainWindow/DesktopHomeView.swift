@@ -374,7 +374,7 @@ struct DesktopHomeView: View {
       // The window's min size is enforced at the AppKit level instead.
       DispatchQueue.main.async {
         for window in NSApp.windows {
-          if window.title.lowercased().hasPrefix("omi") {
+          if window.title.lowercased().hasPrefix("jarvis") {
             window.appearance = NSAppearance(named: .darkAqua)
             window.minSize = NSSize(width: 900, height: 600)
             // Remove .minSize from hosting view's sizingOptions.
@@ -481,7 +481,7 @@ struct DesktopHomeView: View {
     guard DesktopAutomationLaunchOptions.isEnabled else { return }
 
     let currentWindow = NSApp.windows.first(where: {
-      $0.title.lowercased().hasPrefix("omi") && $0.isVisible
+      $0.title.lowercased().hasPrefix("jarvis") && $0.isVisible
     })
     let snapshot = DesktopAutomationSnapshot(
       bridgeEnabled: true,
@@ -515,7 +515,7 @@ struct DesktopHomeView: View {
 
     if activateApp {
       NSApp.activate()
-      if let window = NSApp.windows.first(where: { $0.title.lowercased().hasPrefix("omi") }) {
+      if let window = NSApp.windows.first(where: { $0.title.lowercased().hasPrefix("jarvis") }) {
         window.makeKeyAndOrderFront(nil)
       }
     }
@@ -582,7 +582,7 @@ struct DesktopHomeView: View {
     UserDefaults.standard.set(Double(0), forKey: key)
     // Delay slightly so the window is fully visible
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      guard let window = NSApp.windows.first(where: { $0.title.hasPrefix("Omi") && $0.isVisible })
+      guard let window = NSApp.windows.first(where: { $0.title.hasPrefix("Jarvis") && $0.isVisible })
       else { return }
       var frame = window.frame
       frame.size.width = saved

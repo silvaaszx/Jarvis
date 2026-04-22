@@ -173,12 +173,12 @@ struct OnboardingView: View {
           stepIndex: 4,
           totalSteps: OnboardingFlow.introStepCount,
           eyebrow: "Permission",
-          title: "Let Omi read your screen.",
-          description: "Screen Recording lets Omi see what you're working on.",
+          title: "Let Jarvis read your screen.",
+          description: "Screen Recording lets Jarvis see what you're working on.",
           permissionType: "screen_recording",
           icon: "display.and.arrow.down",
           reasonTitle: "Screen Recording",
-          reasonDetail: "Screen Recording lets Omi see what you're working on.",
+          reasonDetail: "Screen Recording lets Jarvis see what you're working on.",
           primaryActionLabel: "Open Screen Recording settings",
           requiresRestart: true,
           onContinue: {
@@ -201,12 +201,12 @@ struct OnboardingView: View {
           stepIndex: 5,
           totalSteps: OnboardingFlow.introStepCount,
           eyebrow: "Access",
-          title: "Let Omi scan your work.",
-          description: "File access lets Omi map your projects and files.",
+          title: "Let Jarvis scan your work.",
+          description: "File access lets Jarvis map your projects and files.",
           permissionType: "full_disk_access",
           icon: "externaldrive.fill.badge.person.crop",
           reasonTitle: "Disk Access",
-          reasonDetail: "This lets Omi scan your projects and recent files.",
+          reasonDetail: "This lets Jarvis scan your projects and recent files.",
           primaryActionLabel: "Open Disk Access",
           requiresRestart: false,
           onContinue: {
@@ -245,12 +245,12 @@ struct OnboardingView: View {
           stepIndex: 7,
           totalSteps: OnboardingFlow.introStepCount,
           eyebrow: "Permission",
-          title: "Let Omi use your mic.",
-          description: "Microphone lets Omi transcribe meetings.",
+          title: "Let Jarvis use your mic.",
+          description: "Microphone lets Jarvis transcribe meetings.",
           permissionType: "microphone",
           icon: "mic.fill",
           reasonTitle: "Microphone",
-          reasonDetail: "This lets Omi transcribe meetings and voice notes.",
+          reasonDetail: "This lets Jarvis transcribe meetings and voice notes.",
           primaryActionLabel: "Grant microphone access",
           requiresRestart: false,
           onContinue: {
@@ -271,12 +271,12 @@ struct OnboardingView: View {
           stepIndex: 8,
           totalSteps: OnboardingFlow.introStepCount,
           eyebrow: "Permission",
-          title: "Let Omi see the active app.",
-          description: "Accessibility lets Omi know which app is active.",
+          title: "Let Jarvis see the active app.",
+          description: "Accessibility lets Jarvis know which app is active.",
           permissionType: "accessibility",
           icon: "figure.wave",
           reasonTitle: "Accessibility",
-          reasonDetail: "This lets Omi know which app you are using.",
+          reasonDetail: "This lets Jarvis know which app you are using.",
           primaryActionLabel: "Open Accessibility settings",
           requiresRestart: false,
           onContinue: {
@@ -298,12 +298,12 @@ struct OnboardingView: View {
           stepIndex: 9,
           totalSteps: OnboardingFlow.introStepCount,
           eyebrow: "Permission",
-          title: "Let Omi act when asked.",
-          description: "Automation lets Omi take actions for you.",
+          title: "Let Jarvis act when asked.",
+          description: "Automation lets Jarvis take actions for you.",
           permissionType: "automation",
           icon: "bolt.horizontal.circle.fill",
           reasonTitle: "Automation",
-          reasonDetail: "This lets Omi take actions when you ask.",
+          reasonDetail: "This lets Jarvis take actions when you ask.",
           primaryActionLabel: "Grant automation access",
           requiresRestart: false,
           onContinue: {
@@ -506,7 +506,7 @@ struct OnboardingView: View {
 
     // Create welcome task
     Task {
-      let welcomeDescription = "Run omi for two days to start receiving helpful insights"
+      let welcomeDescription = "Run jarvis for two days to start receiving helpful insights"
       let alreadyExists = await ActionItemStorage.shared.actionItemExists(
         description: welcomeDescription)
       if !alreadyExists {
@@ -562,7 +562,7 @@ struct OnboardingTrustPreviewCard: View {
           .font(.system(size: 17, weight: .medium))
           .foregroundColor(OmiColors.textSecondary)
           .lineLimit(1)
-        Text("omi protects your data")
+        Text("jarvis protects your data")
           .font(.system(size: 15, weight: .regular))
           .foregroundColor(OmiColors.textTertiary)
           .lineLimit(1)

@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>omi</string>
+    <string>jarvis</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIconFile</key>
@@ -34,20 +34,20 @@
         <true/>
     </dict>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>Omi needs screen recording permission to monitor your focus and detect distractions.</string>
+    <string>Jarvis needs screen recording permission to monitor your focus and detect distractions.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Omi needs permission to detect which application is currently active.</string>
+    <string>Jarvis needs permission to detect which application is currently active.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Omi needs microphone access to transcribe your conversations in real-time.</string>
+    <string>Jarvis needs microphone access to transcribe your conversations in real-time.</string>
     <key>NSAudioCaptureUsageDescription</key>
-    <string>Omi needs permission to capture system audio for transcription of calls and meetings.</string>
+    <string>Jarvis needs permission to capture system audio for transcription of calls and meetings.</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>Omi needs Bluetooth access to connect to your Omi wearable device for audio capture and transcription.</string>
+    <string>Jarvis needs Bluetooth access to connect to your Jarvis wearable device for audio capture and transcription.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>Omi Auth Callback</string>
+            <string>Jarvis Auth Callback</string>
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>omi-computer-dev</string>

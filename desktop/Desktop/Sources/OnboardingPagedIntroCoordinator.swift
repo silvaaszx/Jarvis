@@ -174,7 +174,7 @@ final class OnboardingPagedIntroCoordinator: ObservableObject {
       }
     }
 
-    return "Omi is still building a clearer picture from the sources connected so far."
+    return "Jarvis is still building a clearer picture from the sources connected so far."
   }
 
   func importedMemoryCount(for source: OnboardingMemoryLogSource) -> Int {
@@ -244,7 +244,7 @@ final class OnboardingPagedIntroCoordinator: ObservableObject {
 
     let panel = NSOpenPanel()
     panel.title = "Select your Apple Notes data folder"
-    panel.message = "Choose the Apple Notes group container so Omi can sync your notes."
+    panel.message = "Choose the Apple Notes group container so Jarvis can sync your notes."
     panel.prompt = "Select Folder"
     panel.canChooseFiles = false
     panel.canChooseDirectories = true
@@ -413,7 +413,9 @@ final class OnboardingPagedIntroCoordinator: ObservableObject {
     let result = await executeTool(name: "request_permission", arguments: ["type": type])
     refreshPermissions(appState: appState)
 
-    if result.contains("move omi to /Applications first") {
+    if result.contains("move omi to /Applications first")
+      || result.contains("move jarvis to /Applications first")
+    {
       lastActionError = result
     }
 
@@ -736,7 +738,7 @@ final class OnboardingPagedIntroCoordinator: ObservableObject {
 
         let summary =
           result.profileSummary.isEmpty
-          ? "Your calendar is busy enough that Omi can start surfacing deadlines and prep work."
+          ? "Your calendar is busy enough that Jarvis can start surfacing deadlines and prep work."
           : result.profileSummary
 
         await self.saveGraph(

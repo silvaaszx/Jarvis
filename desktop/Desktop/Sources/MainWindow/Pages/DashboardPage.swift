@@ -263,7 +263,7 @@ struct DashboardPage: View {
                 },
                 isSending: chatProvider.isSending,
                 isStopping: chatProvider.isStopping,
-                placeholder: "Ask omi anything",
+                placeholder: "Ask jarvis anything",
                 mode: $chatProvider.chatMode,
                 inputText: $chatProvider.draftText
             )
@@ -321,7 +321,7 @@ struct DashboardPage: View {
                     .frame(width: 40, height: 40)
             }
 
-            Text("Ask omi anything")
+            Text("Ask jarvis anything")
                 .scaledFont(size: 16, weight: .semibold)
                 .foregroundColor(OmiColors.textPrimary)
 

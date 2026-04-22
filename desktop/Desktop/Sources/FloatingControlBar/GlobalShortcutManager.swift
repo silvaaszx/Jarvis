@@ -31,7 +31,7 @@ class GlobalShortcutManager {
             1, &eventType, nil, nil
         )
 
-        // Re-register Ask Omi shortcut when user changes it in settings
+        // Re-register Ask Jarvis shortcut when user changes it in settings
         shortcutObserver = NotificationCenter.default.addObserver(
             forName: ShortcutSettings.askOmiShortcutChanged,
             object: nil,
@@ -44,7 +44,7 @@ class GlobalShortcutManager {
     func registerShortcuts() {
         unregisterShortcuts()
         guard !isRegistrationSuspended else { return }
-        // Register Ask Omi shortcut from user settings
+        // Register Ask Jarvis shortcut from user settings
         registerAskOmi()
     }
 
@@ -59,7 +59,7 @@ class GlobalShortcutManager {
 
     private func registerAskOmi() {
         guard !isRegistrationSuspended else { return }
-        // Unregister previous Ask Omi hotkey if any
+        // Unregister previous Ask Jarvis hotkey if any
         if let ref = hotKeyRefs.removeValue(forKey: .askOmi) {
             UnregisterEventHotKey(ref)
         }
@@ -67,15 +67,15 @@ class GlobalShortcutManager {
             (ShortcutSettings.shared.askOmiEnabled, ShortcutSettings.shared.askOmiShortcut)
         }
         guard askOmiEnabled else {
-            NSLog("GlobalShortcutManager: Ask Omi shortcut is disabled")
+            NSLog("GlobalShortcutManager: Ask Jarvis shortcut is disabled")
             return
         }
         guard askOmiShortcut.supportsGlobalHotKey, let keyCode = askOmiShortcut.keyCode else {
-            NSLog("GlobalShortcutManager: Ask Omi shortcut is not a registerable hotkey")
+            NSLog("GlobalShortcutManager: Ask Jarvis shortcut is not a registerable hotkey")
             return
         }
         registerHotKey(keyCode: Int(keyCode), modifiers: askOmiShortcut.carbonModifiers, id: .askOmi)
-        NSLog("GlobalShortcutManager: Registered Ask Omi shortcut: \(askOmiShortcut.displayLabel)")
+        NSLog("GlobalShortcutManager: Registered Ask Jarvis shortcut: \(askOmiShortcut.displayLabel)")
     }
 
     private func registerHotKey(keyCode: Int, modifiers: Int, id: HotKeyID) {
@@ -112,7 +112,7 @@ class GlobalShortcutManager {
 
         switch id {
         case .askOmi:
-            NSLog("GlobalShortcutManager: Ask Omi shortcut detected")
+            NSLog("GlobalShortcutManager: Ask Jarvis shortcut detected")
             DispatchQueue.main.async {
                 FloatingControlBarManager.shared.toggleAIInput()
             }

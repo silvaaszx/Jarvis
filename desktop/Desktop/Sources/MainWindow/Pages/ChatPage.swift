@@ -205,7 +205,7 @@ struct ChatPage: View {
       )
     }
     .alert("Upgrade Required", isPresented: $chatProvider.showOmiThresholdAlert) {
-      Button("Upgrade to Omi Pro") {
+      Button("Upgrade to Jarvis Pro") {
         chatProvider.showOmiThresholdAlert = false
         if let url = URL(string: "https://omi.me/pricing") {
           NSWorkspace.shared.open(url)
@@ -215,7 +215,7 @@ struct ChatPage: View {
         chatProvider.showOmiThresholdAlert = false
       }
     } message: {
-      Text("Upgrade to Omi Pro for $199/month to continue chatting.")
+      Text("Upgrade to Jarvis Pro for $199/month to continue chatting.")
     }
     .overlay {
       // Loading overlay when fetching citation
@@ -332,7 +332,7 @@ struct ChatPage: View {
             }
           } else {
             // Default OMI assistant
-            Text("omi")
+            Text("jarvis")
               .scaledFont(size: 14, weight: .medium)
               .foregroundColor(OmiColors.textPrimary)
           }
@@ -501,7 +501,7 @@ struct ChatPage: View {
             .frame(width: 48, height: 48)
         }
 
-        Text("Chat with omi")
+         Text("Chat with jarvis")
           .scaledFont(size: 18, weight: .semibold)
           .foregroundColor(OmiColors.textPrimary)
 
@@ -546,7 +546,7 @@ struct ChatPage: View {
   /// Copy the entire conversation to clipboard
   private func copyConversation() {
     let text: String = chatProvider.messages.map { message in
-      let sender = message.sender == .user ? "You" : (selectedApp?.name ?? "omi")
+      let sender = message.sender == .user ? "You" : (selectedApp?.name ?? "jarvis")
       return "\(sender): \(message.text)"
     }.joined(separator: "\n\n")
 
@@ -1380,7 +1380,7 @@ struct DefaultOmiRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
 
-        Text("omi")
+        Text("jarvis")
           .scaledFont(size: 13, weight: .medium)
           .foregroundColor(OmiColors.textPrimary)
 

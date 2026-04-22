@@ -20,7 +20,7 @@ struct PermissionsPage: View {
                             .foregroundColor(OmiColors.textPrimary)
                     }
 
-                    Text("omi needs the following permissions to work properly.")
+                    Text("jarvis needs the following permissions to work properly.")
                         .scaledFont(size: 14)
                         .foregroundColor(OmiColors.textSecondary)
                 }
@@ -45,7 +45,7 @@ struct PermissionsPage: View {
                             .scaledFont(size: 20)
                             .foregroundColor(.green)
 
-                        Text("All permissions granted! omi is ready to use.")
+                        Text("All permissions granted! jarvis is ready to use.")
                             .scaledFont(size: 15, weight: .medium)
                             .foregroundColor(OmiColors.textPrimary)
                     }
@@ -310,14 +310,14 @@ struct MicrophonePermissionSection: View {
                     }
                 }
 
-                // Step 2: Find Omi and toggle ON
+                // Step 2: Find Jarvis and toggle ON
                 HStack(alignment: .top, spacing: 8) {
                     Text("2.")
                         .scaledFont(size: 13, weight: .semibold)
                         .foregroundColor(OmiColors.textSecondary)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Find \"omi\" and toggle it ON")
+                        Text("Find \"jarvis\" and toggle it ON")
                             .scaledFont(size: 13)
                             .foregroundColor(OmiColors.textSecondary)
 
@@ -349,7 +349,7 @@ struct MicrophonePermissionSection: View {
             VStack(alignment: .leading, spacing: 12) {
                 instructionStep(number: 1, text: "Click \"Grant Access\" below - a system dialog will appear")
                 instructionStep(number: 2, text: "Click \"OK\" to allow microphone access")
-                instructionStep(number: 3, text: "If no dialog appears, find \"\(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "omi")\" in Settings and enable it")
+                instructionStep(number: 3, text: "If no dialog appears, find \"\(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "jarvis")\" in Settings and enable it")
             }
 
             Button(action: {
@@ -505,7 +505,7 @@ struct ScreenRecordingPermissionSection: View {
 
     // Content for STALE state - developer signing changed, user must remove and re-add
     private var stalePermissionContent: some View {
-        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "omi"
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "jarvis"
         return VStack(alignment: .leading, spacing: 16) {
             Text("Screen recording needs to be re-enabled after an app update.")
                 .scaledFont(size: 14, weight: .medium)
@@ -558,7 +558,7 @@ struct ScreenRecordingPermissionSection: View {
                         .background(Circle().fill(OmiColors.purplePrimary))
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Come back to omi and grant the permission")
+                        Text("Come back to jarvis and grant the permission")
                             .scaledFont(size: 13)
                             .foregroundColor(OmiColors.textSecondary)
 
@@ -596,17 +596,17 @@ struct ScreenRecordingPermissionSection: View {
 
     // Content for NORMAL state - first-time grant flow
     private var normalGrantContent: some View {
-        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "omi"
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "jarvis"
         return VStack(alignment: .leading, spacing: 16) {
             Text("How to grant screen recording access:")
                 .scaledFont(size: 14, weight: .medium)
                 .foregroundColor(OmiColors.textPrimary)
 
             VStack(alignment: .leading, spacing: 12) {
-                instructionStep(number: 1, text: "Click \"Open Settings\" below - this will make omi appear in the list")
+                instructionStep(number: 1, text: "Click \"Open Settings\" below - this will make jarvis appear in the list")
                 instructionStep(number: 2, text: "Find \"\(appName)\" in the Screen Recording list")
                 instructionStep(number: 3, text: "Toggle the switch to enable screen recording")
-                instructionStep(number: 4, text: "Return to omi - permission will update automatically")
+                instructionStep(number: 4, text: "Return to jarvis - permission will update automatically")
             }
 
             // Tutorial GIF
@@ -822,7 +822,7 @@ struct NotificationPermissionSection: View {
             VStack(alignment: .leading, spacing: 12) {
                 instructionStep(number: 1, text: "Click \"Grant Access\" below - a system dialog will appear")
                 instructionStep(number: 2, text: "Click \"Allow\" to enable notifications")
-                instructionStep(number: 3, text: "Tip: In System Settings > Notifications > omi, set style to \"Banners\" to see visual alerts")
+                instructionStep(number: 3, text: "Tip: In System Settings > Notifications > jarvis, set style to \"Banners\" to see visual alerts")
             }
 
             Button(action: {

@@ -28,7 +28,7 @@ enum AppBuild {
       return bundleName
     }
 
-    return "omi"
+    return "jarvis"
   }
 
   static var currentUpdateChannel: String {

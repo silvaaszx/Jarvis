@@ -28,7 +28,7 @@ struct OnboardingBYOKStepView: View {
       eyebrow: "Free forever",
       title: "Bring your own keys.",
       description:
-        "Paste your own API keys for OpenAI, Anthropic, Gemini, and Deepgram and Omi is free forever. Keys stay on this Mac — we never store them on our servers.",
+        "Paste your own API keys for OpenAI, Anthropic, Gemini, and Deepgram and Jarvis is free forever. Keys stay on this Mac — we never store them on our servers.",
       showsSkip: true,
       onSkip: {
         AnalyticsManager.shared.onboardingStepCompleted(step: stepIndex, stepName: "BYOK_Skipped")

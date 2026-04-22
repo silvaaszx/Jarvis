@@ -581,7 +581,7 @@ struct ImportConnector: Identifiable {
             id: "chatgpt",
             title: "ChatGPT",
             subtitle: "Memory import",
-            description: "Paste a memory export into Omi.",
+            description: "Paste a memory export into Jarvis.",
             brand: .chatgpt,
             statusText: "Optional",
             metricText: nil,
@@ -592,7 +592,7 @@ struct ImportConnector: Identifiable {
             id: "claude",
             title: "Claude",
             subtitle: "Memory import",
-            description: "Paste a memory export into Omi.",
+            description: "Paste a memory export into Jarvis.",
             brand: .claude,
             statusText: "Optional",
             metricText: nil,
@@ -1153,7 +1153,7 @@ private final class ImportConnectorSheetModel: ObservableObject {
 
         beginRun(
             title: "Indexing local files",
-            detail: "Scanning your on-device files so Omi can use them in memory search."
+            detail: "Scanning your on-device files so Jarvis can use them in memory search."
         )
         defer { finishRun() }
 

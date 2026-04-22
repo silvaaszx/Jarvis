@@ -329,7 +329,7 @@ struct MemoryExportDestinationSheet: View {
     case .notion:
       VStack(alignment: .leading, spacing: 12) {
         Text(
-          "Omi copies a ready-to-paste Markdown page, saves a local backup, and opens Notion so you can drop it where you want."
+          "Jarvis copies a ready-to-paste Markdown page, saves a local backup, and opens Notion so you can drop it where you want."
         )
         .scaledFont(size: 12)
         .foregroundColor(OmiColors.textTertiary)
@@ -340,7 +340,7 @@ struct MemoryExportDestinationSheet: View {
         selectedLocationCard(
           title: model.obsidianVaultPath.isEmpty ? "No vault selected yet" : "Selected vault",
           value: model.obsidianVaultPath.isEmpty
-            ? "Pick your Obsidian vault once, then Omi will keep refreshing `Omi/Memories.md`."
+            ? "Pick your Obsidian vault once, then Jarvis will keep refreshing `Jarvis/Memories.md`."
             : model.obsidianVaultPath
         )
 
@@ -351,7 +351,7 @@ struct MemoryExportDestinationSheet: View {
         .foregroundColor(OmiColors.textSecondary)
         .scaledFont(size: 12, weight: .medium)
 
-        Text("Omi writes a refreshed `Omi/Memories.md` file inside the selected vault.")
+        Text("Jarvis writes a refreshed `Jarvis/Memories.md` file inside the selected vault.")
           .scaledFont(size: 12)
           .foregroundColor(OmiColors.textTertiary)
       }
@@ -359,7 +359,7 @@ struct MemoryExportDestinationSheet: View {
     case .chatgpt, .claude, .gemini:
       VStack(alignment: .leading, spacing: 12) {
         Text(
-          "Omi will generate a Markdown memory pack, copy the prompt and export together, reveal the file in Finder, and open \(destination.title)."
+          "Jarvis will generate a Markdown memory pack, copy the prompt and export together, reveal the file in Finder, and open \(destination.title)."
         )
         .scaledFont(size: 13)
         .foregroundColor(OmiColors.textSecondary)

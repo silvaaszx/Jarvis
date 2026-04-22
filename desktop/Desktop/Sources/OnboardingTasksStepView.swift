@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Onboarding step explaining that omi auto-creates tasks.
+/// Onboarding step explaining that jarvis auto-creates tasks.
 struct OnboardingTasksStepView: View {
     var onComplete: () -> Void
     var onSkip: (() -> Void)? = nil
@@ -57,7 +57,7 @@ struct OnboardingTasksStepView: View {
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(OmiColors.textPrimary)
 
-                    Text("omi listens to your conversations and automatically\ncreates tasks, action items, and follow-ups for you.")
+                    Text("jarvis listens to your conversations and automatically\ncreates tasks, action items, and follow-ups for you.")
                         .font(.system(size: 14))
                         .foregroundColor(OmiColors.textSecondary)
                         .multilineTextAlignment(.center)

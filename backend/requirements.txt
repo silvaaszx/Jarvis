@@ -123,7 +123,7 @@ numba==0.60.0
 numpy==1.26.4
 omegaconf==2.3.0
 onnxruntime==1.19.0
-openai==1.104.2
+google-generativeai>=0.8.0
 scipy==1.14.0
 optuna==3.6.1
 opuslib==3.0.1

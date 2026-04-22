@@ -545,7 +545,7 @@ struct SidebarView: View {
   //        .help("Upgrade to Pro")
   //    }
 
-  // MARK: - Get Omi Widget (Sales link to omi.me)
+  // MARK: - Get Jarvis Widget (Sales link to omi.me)
   private var getOmiWidget: some View {
     Button(action: {
       if let url = URL(string: "https://www.omi.me") {
@@ -570,7 +570,7 @@ struct SidebarView: View {
         if !isCollapsed {
           // Text content
           VStack(alignment: .leading, spacing: 2) {
-            Text("Get omi Device")
+            Text("Get jarvis Device")
               .scaledFont(size: 13, weight: .semibold)
               .foregroundColor(OmiColors.textPrimary)
 
@@ -607,7 +607,7 @@ struct SidebarView: View {
       )
     }
     .buttonStyle(.plain)
-    .help(isCollapsed ? "Get omi Device" : "")
+    .help(isCollapsed ? "Get jarvis Device" : "")
   }
 
   // MARK: - Update Available Widget

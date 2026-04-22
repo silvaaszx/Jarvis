@@ -90,7 +90,7 @@ struct OMIApp: App {
 
     let version =
       Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
-    let baseName = Self.launchMode == .rewind ? "omi Rewind" : UpdateChannel.appDisplayName
+    let baseName = Self.launchMode == .rewind ? "jarvis Rewind" : UpdateChannel.appDisplayName
     return version.isEmpty ? baseName : "\(baseName) v\(version)"
   }
 
@@ -491,7 +491,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       var foundOmiWindow = false
       for window in NSApp.windows {
         log("AppDelegate: Window title='\(window.title)', isVisible=\(window.isVisible)")
-        if window.title.hasPrefix("Omi") {
+        if window.title.hasPrefix("Jarvis") {
           foundOmiWindow = true
           window.makeKeyAndOrderFront(nil)
           window.appearance = NSAppearance(named: .darkAqua)
@@ -501,7 +501,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
       }
       if !foundOmiWindow {
-        log("AppDelegate: WARNING - 'Omi' window not found!")
+        log("AppDelegate: WARNING - 'Jarvis' window not found!")
       }
     }
 
@@ -635,7 +635,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
           NSApp.activate()
           // Find and show main window
           for window in NSApp.windows {
-            if window.title.hasPrefix("Omi") {
+            if window.title.hasPrefix("Jarvis") {
               window.makeKeyAndOrderFront(nil)
               break
             }
@@ -648,7 +648,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       return event
     }
 
-    // Ask Omi shortcut is registered via Carbon RegisterEventHotKey in
+    // Ask Jarvis shortcut is registered via Carbon RegisterEventHotKey in
     // GlobalShortcutManager (works regardless of accessibility permission state).
 
     // Global monitor - for when OTHER apps are focused (Ctrl+Option+R only)
@@ -664,7 +664,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     log(
       "AppDelegate: Hotkey monitors registered - global=\(globalHotkeyMonitor != nil), local=\(localHotkeyMonitor != nil)"
     )
-    log("AppDelegate: Hotkey is Ctrl+Option+R (⌃⌥R), Ask Omi via Carbon hotkeys")
+    log("AppDelegate: Hotkey is Ctrl+Option+R (⌃⌥R), Ask Jarvis via Carbon hotkeys")
   }
 
   // Dock icon is always visible — LSUIElement=false and activation policy stays .regular
@@ -685,7 +685,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     if let button = item.button {
       if OMIApp.launchMode == .rewind {
         if let icon = NSImage(
-          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "omi Rewind")
+          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "jarvis Rewind")
         {
           icon.isTemplate = true
           button.image = icon
@@ -746,14 +746,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     log("AppDelegate: [MENUBAR] NSStatusItem created successfully")
 
     let displayName =
-      Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "omi"
+      Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "jarvis"
 
     // Set up the button with icon — use "omi" text logo (not a circle)
     if let button = statusBarItem.button {
       if OMIApp.launchMode == .rewind {
         // Rewind mode uses SF Symbol
         if let icon = NSImage(
-          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "omi Rewind")
+          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "jarvis Rewind")
         {
           icon.isTemplate = true
           button.image = icon
@@ -772,13 +772,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log("AppDelegate: [MENUBAR] Omi text logo set successfully (size: \(icon.size))")
       } else {
         // Fallback to SF Symbol
-        if let icon = NSImage(systemSymbolName: "waveform", accessibilityDescription: "omi") {
+        if let icon = NSImage(systemSymbolName: "waveform", accessibilityDescription: "jarvis") {
           icon.isTemplate = true
           button.image = icon
         }
         log("AppDelegate: [MENUBAR] WARNING - Failed to load omi_text_logo, using fallback")
       }
-      button.toolTip = OMIApp.launchMode == .rewind ? "omi Rewind" : displayName
+      button.toolTip = OMIApp.launchMode == .rewind ? "jarvis Rewind" : displayName
     } else {
       log("AppDelegate: [MENUBAR] WARNING - statusBarItem.button is nil")
     }
@@ -890,7 +890,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Dock icon is always visible; just activate the app
     NSApp.activate()
     if !foundWindow {
-      log("AppDelegate: [MENUBAR] WARNING - No Omi window found when opening from menu bar")
+      log("AppDelegate: [MENUBAR] WARNING - No Jarvis window found when opening from menu bar")
     }
   }
 
@@ -1053,14 +1053,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool
   {
-    // Always try to show the main Omi window when dock icon is clicked
-    for window in sender.windows where window.title.hasPrefix("Omi") {
+    // Always try to show the main Jarvis window when dock icon is clicked
+    for window in sender.windows where window.title.hasPrefix("Jarvis") {
       if window.isMiniaturized {
         window.deminiaturize(nil)
       }
       window.makeKeyAndOrderFront(nil)
       sender.activate(ignoringOtherApps: true)
-      log("AppDelegate: Restored Omi window from dock click (wasVisible=\(flag))")
+      log("AppDelegate: Restored Jarvis window from dock click (wasVisible=\(flag))")
       return false
     }
     return true

@@ -154,9 +154,9 @@ struct OnboardingChatView: View {
             .foregroundColor(.white)
             .scaledToFit()
             .frame(width: 52, height: 18)
-            .accessibilityLabel("omi")
+            .accessibilityLabel("jarvis")
         } else {
-          Text("omi")
+          Text("jarvis")
             .font(.system(size: 18, weight: .semibold))
             .foregroundColor(.white)
         }
@@ -491,7 +491,7 @@ struct OnboardingChatView: View {
       Button("Skip anyway", role: .destructive) { onSkip() }
       Button("Continue setup", role: .cancel) {}
     } message: {
-      Text("Omi won't be useful for you if it doesn't know enough about you.")
+      Text("Jarvis won't be useful for you if it doesn't know enough about you.")
     }
   }
 
@@ -696,7 +696,7 @@ struct OnboardingChatView: View {
 
       Task {
         await chatProvider.sendMessage(
-          "Hi, I just installed omi!",
+          "Hi, I just installed jarvis!",
           systemPromptPrefix: systemPrompt
         )
       }
@@ -1208,7 +1208,7 @@ struct OnboardingChatView: View {
   private func generatePermissionHelp(for permType: String) async -> String {
     let permLabel = permissionDisplayName(permType)
     let fallback =
-      "Open System Settings \u{2192} Privacy & Security \u{2192} \(permLabel) and toggle Omi on."
+      "Open System Settings \u{2192} Privacy & Security \u{2192} \(permLabel) and toggle Jarvis on."
 
     // Capture screenshot
     guard let screenshotURL = ScreenCaptureManager.captureScreen() else {
@@ -1226,7 +1226,7 @@ struct OnboardingChatView: View {
     do {
       let gemini = try GeminiClient()
       let prompt =
-        "The user needs to grant \(permLabel) permission to the Omi app. Look at the screenshot. Tell them exactly where to click in ONE short sentence, max 15 words."
+        "The user needs to grant \(permLabel) permission to the Jarvis app. Look at the screenshot. Tell them exactly where to click in ONE short sentence, max 15 words."
       let systemPrompt =
         "You are a concise macOS setup helper. Give only the essential click instruction, nothing else."
 
@@ -1468,7 +1468,7 @@ struct OnboardingChatView: View {
         }
       }
 
-      var lines: [String] = ["**Database schema (omi.db):**", ""]
+      var lines: [String] = ["**Database schema (jarvis.db):**", ""]
       for (name, sql) in tables {
         if ChatPrompts.excludedTables.contains(name) { continue }
         if ChatPrompts.excludedTablePrefixes.contains(where: { name.hasPrefix($0) }) { continue }
@@ -1563,7 +1563,7 @@ struct OnboardingChatView: View {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
       NSApp.activate()
       for window in NSApp.windows {
-        if window.title.hasPrefix("Omi") {
+        if window.title.hasPrefix("Jarvis") {
           window.makeKeyAndOrderFront(nil)
           window.orderFrontRegardless()
         }
