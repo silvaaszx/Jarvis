@@ -23,6 +23,7 @@ import 'package:opus_flutter/opus_flutter.dart' as opus_flutter;
 import 'package:provider/provider.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
+import 'package:omi/supabase_client.dart';
 import 'package:omi/app_globals.dart';
 import 'package:omi/backend/http/shared.dart';
 import 'package:omi/backend/preferences.dart';
@@ -140,6 +141,10 @@ Future _init() async {
     // Firebase may already be initialized by native SDK (macOS)
     debugPrint('Firebase already initialized.');
   }
+
+  // Phase 1: Supabase initialization
+  await initSupabase();
+  // TODO: remove Firebase after full migration to Supabase (Phase 1.5)
 
   await PlatformManager.initializeServices();
   await NotificationService.instance.initialize();
