@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -8,8 +7,8 @@ load_dotenv()  # No-op if .env doesn't exist (production); loads local dev secre
 
 logging.basicConfig(level=logging.INFO)
 
-import firebase_admin
 from fastapi import FastAPI
+from utils.supabase_client import get_supabase
 
 from routers import (
     chat,
@@ -66,12 +65,7 @@ log_langsmith_status()
 # Validate Stripe price IDs so misconfigured plans fail loud
 validate_stripe_price_ids()
 
-if os.environ.get('SERVICE_ACCOUNT_JSON'):
-    service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
-    credentials = firebase_admin.credentials.Certificate(service_account_info)
-    firebase_admin.initialize_app(credentials)
-else:
-    firebase_admin.initialize_app()
+get_supabase()  # inicializa singleton na startup
 
 app = FastAPI()
 

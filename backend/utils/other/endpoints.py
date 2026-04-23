@@ -7,7 +7,6 @@ from fastapi import Depends, Header, HTTPException, WebSocketException
 from fastapi import Request
 from starlette.websockets import WebSocket
 from firebase_admin import auth
-from firebase_admin.auth import InvalidIdTokenError
 import logging
 import redis as redis_pkg
 
@@ -15,6 +14,7 @@ from database.redis_db import check_rate_limit, try_acquire_listen_lock
 from database.users import record_user_platform
 from utils.byok import extract_byok_from_websocket, set_byok_keys, validate_byok_request, validate_byok_websocket
 from utils.rate_limit_config import RATE_POLICIES, RATE_LIMIT_SHADOW, get_effective_limit
+from utils.supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -26,30 +26,21 @@ def get_user(uid: str):
 
 def verify_token(token: str) -> str:
     """
-    Verify a Firebase token or ADMIN_KEY and return the uid.
-
-    Args:
-        token: The token to verify (Firebase ID token or ADMIN_KEY format)
-
-    Returns:
-        The user's uid
-
-    Raises:
-        InvalidIdTokenError: If the token is invalid
+    Verify a Supabase JWT and return the uid.
+    Falls back to ADMIN_KEY for internal use.
     """
-    # Check for ADMIN_KEY format
     admin_key = os.getenv('ADMIN_KEY')
     if admin_key and token.startswith(admin_key):
-        return token[len(admin_key) :]
+        return token[len(admin_key):]
 
-    # Verify Firebase token
     try:
-        decoded_token = auth.verify_id_token(token)
-        return decoded_token['uid']
-    except InvalidIdTokenError:
+        supabase = get_supabase()
+        user = supabase.auth.get_user(token)
+        return user.user.id
+    except Exception:
         if os.getenv('LOCAL_DEVELOPMENT') == 'true':
             return '123'
-        raise
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 def get_current_user_uid(
@@ -70,12 +61,8 @@ def get_current_user_uid(
     elif len(str(authorization).split(' ')) != 2:
         raise HTTPException(status_code=401, detail="Invalid authorization token")
 
-    try:
-        token = authorization.split(' ')[1]
-        uid = verify_token(token)
-    except InvalidIdTokenError as e:
-        logger.error(e)
-        raise HTTPException(status_code=401, detail="Invalid authorization token")
+    token = authorization.split(' ')[1]
+    uid = verify_token(token)
 
     try:
         record_user_platform(uid, x_app_platform)
@@ -106,12 +93,8 @@ def get_current_user_uid_no_byok_validation(
     elif len(str(authorization).split(' ')) != 2:
         raise HTTPException(status_code=401, detail="Invalid authorization token")
 
-    try:
-        token = authorization.split(' ')[1]
-        uid = verify_token(token)
-    except InvalidIdTokenError as e:
-        logger.error(e)
-        raise HTTPException(status_code=401, detail="Invalid authorization token")
+    token = authorization.split(' ')[1]
+    uid = verify_token(token)
 
     try:
         record_user_platform(uid, x_app_platform)
@@ -135,8 +118,8 @@ def _verify_ws_auth(authorization: str) -> str:
     try:
         token = authorization.split(' ')[1]
         return verify_token(token)
-    except InvalidIdTokenError as e:
-        logger.error(f"WebSocket auth failed: {e}")
+    except HTTPException as e:
+        logger.error(f"WebSocket auth failed: {e.detail}")
         raise WebSocketException(code=1008, reason="Invalid or expired token")
     except Exception as e:
         logger.error(f"WebSocket auth error: {e}")
