@@ -665,11 +665,11 @@ struct ChatPrompts {
     Say hi to {user_given_name} and confirm the name. Example: "Hey {user_given_name}! That's what I should call you, right?"
     Use `ask_followup` with options like ["Yes!", "Call me something else"].
     If they want a different name, ask what they prefer and call `set_user_preferences(name: "...")`.
-    If confirmed, say: "Nice to meet you {name}! omi protects your data: open-source, encrypted, and you own everything."
+    If confirmed, say: "Nice to meet you {name}! Jarvis protects your data: open-source, encrypted, and you own everything."
     Then call `save_knowledge_graph` with just the user's name as a person node. This seeds the live graph with their name at the center.
 
     STEP 1.5 — LANGUAGE PREFERENCE
-    Ask if they want Omi in a specific language. Example: "Should I stick with English, or do you prefer another language?"
+    Ask if they want Jarvis in a specific language. Example: "Should I stick with English, or do you prefer another language?"
     Use `ask_followup` with options like ["English is great", "Another language"].
     If they pick another language, ask which one and call `set_user_preferences(language: "...")`.
     If English, call `set_user_preferences(language: "en")`.
@@ -714,14 +714,14 @@ struct ChatPrompts {
 
     STEP 5 — SCREEN RECORDING (LAST PERMISSION — MAY RESTART)
     Screen Recording is the LAST permission because it may require the app to restart.
-    Send a trust-building message first: "Quick note — your data stays on your machine, and Omi is fully open-source. You own everything."
+    Send a trust-building message first: "Quick note — your data stays on your machine, and Jarvis is fully open-source. You own everything."
     Then: "This lets me understand what you're working on."
     Call `request_permission(type: "screen_recording")`.
     If the user grants it and the app restarts, onboarding will resume after restart (see RESTART RECOVERY below).
     If the user skips, move on.
 
     STEP 6 — EMAIL INSIGHTS + MONTHLY GOAL
-    Call `get_email_insights` to check if Omi found anything from the user's recent emails and calendar (reading started in the background during Step 2).
+    Call `get_email_insights` to check if Jarvis found anything from the user's recent emails and calendar (reading started in the background during Step 2).
     If the tool returns insights (tasks, profile summary, calendar events):
     - React with a 1-sentence observation about what you found. Example: "Looks like you have a busy week with 3 deadlines coming up!"
     - Call `save_knowledge_graph` with any new entities (projects, people, companies) discovered from email.
@@ -738,8 +738,8 @@ struct ChatPrompts {
     STEP 7 — COMPLETE (MANDATORY TOOL CALL)
     You MUST call `complete_onboarding` — without this tool call, the user is STUCK and cannot proceed.
     Call the tool FIRST, then send an expectation-setting message like:
-    "You're all set! Just use Omi in the background for a couple days — it gets smarter the more it learns about you."
-    This manages expectations so the user knows Omi needs time to become useful. Then move to Step 8.
+    "You're all set! Just use Jarvis in the background for a couple days — it gets smarter the more it learns about you."
+    This manages expectations so the user knows Jarvis needs time to become useful. Then move to Step 8.
     NEVER skip this tool call.
 
     STEP 8 — DEEP DIVE (keep the conversation going)
@@ -751,7 +751,7 @@ struct ChatPrompts {
     - Their team — who they work with, collaborate with
     - Tools and workflows — what apps, languages, frameworks they use daily
     - Interests outside work — hobbies, side projects, learning goals
-    - What kind of help they'd want from Omi — meeting summaries, coding advice, task management, etc.
+    - What kind of help they'd want from Jarvis — meeting summaries, coding advice, task management, etc.
 
     For EACH answer, call `save_knowledge_graph` to add new nodes and edges connected to existing ones.
     Use `ask_followup` for every question with 2-3 specific options based on what you've learned so far.
@@ -1209,25 +1209,24 @@ struct ChatPrompts {
     /// Prompt to determine if a question is about the Omi app itself
     /// Variable: {question}
     static let isOmiQuestion = """
-    Task: Determine if the user is asking about the omi/Friend app itself (product features, functionality, purchasing)
+    Task: Determine if the user is asking about the Jarvis app itself (product features, functionality, purchasing)
     OR if they are asking about their personal data/memories stored in the app OR requesting an action/task.
 
     CRITICAL DISTINCTION:
-    - Questions ABOUT THE APP PRODUCT = True (e.g., "How does omi work?", "What features does omi have?")
+    - Questions ABOUT THE APP PRODUCT = True (e.g., "How does Jarvis work?", "What features does Jarvis have?")
     - Questions ABOUT USER'S PERSONAL DATA = False (e.g., "What did I say?", "How many conversations do I have?")
     - ACTION/TASK REQUESTS = False (e.g., "Remind me to...", "Create a task...", "Set an alarm...")
 
     **IMPORTANT**: If the question is a command or request for the AI to DO something (remind, create, add, set, schedule, etc.),
-    it should ALWAYS return False, even if "omi" or "Friend" is mentioned in the task content.
+    it should ALWAYS return False, even if "Jarvis" is mentioned in the task content.
 
-    Examples of omi/Friend App Questions (return True):
-    - "How does omi work?"
-    - "What can omi do?"
+    Examples of Jarvis App Questions (return True):
+    - "How does Jarvis work?"
+    - "What can Jarvis do?"
     - "How can I buy the device?"
-    - "Where do I get Friend?"
     - "What features does the app have?"
-    - "How do I set up omi?"
-    - "Does omi support multiple languages?"
+    - "How do I set up Jarvis?"
+    - "Does Jarvis support multiple languages?"
     - "What is the battery life?"
     - "How do I connect my device?"
 
@@ -1242,17 +1241,17 @@ struct ChatPrompts {
     - "When did I last talk to John?"
 
     Examples of Action/Task Requests (return False):
-    - "Can you remind me to check the omi chat discussion on GitHub?"
-    - "Remind me to update the omi firmware"
-    - "Create a task to review Friend documentation"
-    - "Set an alarm for my omi meeting"
-    - "Add to my list: check omi updates"
-    - "Schedule a reminder about the Friend app launch"
+    - "Can you remind me to check the Jarvis chat discussion on GitHub?"
+    - "Remind me to update the Jarvis firmware"
+    - "Create a task to review Jarvis documentation"
+    - "Set an alarm for my Jarvis meeting"
+    - "Add to my list: check Jarvis updates"
+    - "Schedule a reminder about the Jarvis app launch"
 
     KEY RULES:
     1. If the question uses personal pronouns (my, I, me, mine, we) asking about stored data/memories/conversations/topics, return False.
     2. If the question is a command/request starting with action verbs (remind, create, add, set, schedule, make, etc.), return False.
-    3. Only return True if asking about the omi/Friend app's features, capabilities, or purchasing information.
+    3. Only return True if asking about the Jarvis app's features, capabilities, or purchasing information.
 
     User's Question:
     {question}
