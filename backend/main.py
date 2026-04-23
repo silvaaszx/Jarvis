@@ -70,6 +70,12 @@ get_supabase()  # inicializa singleton na startup
 
 app = FastAPI()
 
+
+@app.get('/')
+def health_check():
+    return {'status': 'ok', 'service': 'jarvis-backend'}
+
+
 app.include_router(transcribe.router)
 app.include_router(conversations.router)
 app.include_router(action_items.router)
