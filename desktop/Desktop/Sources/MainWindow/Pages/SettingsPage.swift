@@ -1497,7 +1497,7 @@ struct SettingsContentView: View {
           privacyToggleRow(
             icon: "mic.fill",
             title: "Store Recordings",
-            subtitle: "Allow omi to store audio recordings of your conversations",
+            subtitle: "Allow jarvis to store audio recordings of your conversations",
             isOn: $recordingPermissionEnabled
           ) { newValue in
             updateRecordingPermission(newValue)
@@ -2016,7 +2016,7 @@ struct SettingsContentView: View {
             .scaledFont(size: 20)
             .foregroundColor(OmiColors.purplePrimary)
           VStack(alignment: .leading, spacing: 2) {
-            Text(APIKeyService.isByokActive ? "Free plan active" : "Use Omi free forever")
+            Text(APIKeyService.isByokActive ? "Free plan active" : "Use Jarvis free forever")
               .scaledFont(size: 15, weight: .semibold)
               .foregroundColor(OmiColors.textPrimary)
             Text(
@@ -2323,7 +2323,7 @@ struct SettingsContentView: View {
             Spacer()
 
             Picker("", selection: $chatBridgeMode) {
-              Text("Omi AI").tag("piMono")
+              Text("Jarvis AI").tag("piMono")
               Text("Your Claude Account").tag("claudeCode")
             }
             .pickerStyle(.menu)
@@ -2340,7 +2340,7 @@ struct SettingsContentView: View {
           Text(
             chatBridgeMode == "claudeCode"
               ? "Using your Claude Pro/Max subscription. You'll be prompted to sign in with your Claude account."
-              : "Using your Omi account. All inference routed through api.omi.me."
+              : "Using your Jarvis account. All inference routed through api.omi.me."
           )
           .scaledFont(size: 12)
           .foregroundColor(OmiColors.textTertiary)
@@ -3146,7 +3146,7 @@ struct SettingsContentView: View {
             Spacer()
 
             Picker("", selection: $chatBridgeMode) {
-              Text("Omi AI").tag("piMono")
+              Text("Jarvis AI").tag("piMono")
               Text("Your Claude Account").tag("claudeCode")
             }
             .pickerStyle(.menu)
@@ -3163,7 +3163,7 @@ struct SettingsContentView: View {
           Text(
             chatBridgeMode == "claudeCode"
               ? "Use your Claude subscription for desktop chat."
-              : "Use your Omi account for desktop chat."
+              : "Use your Jarvis account for desktop chat."
           )
           .scaledFont(size: 12)
           .foregroundColor(OmiColors.textTertiary)
@@ -5249,12 +5249,12 @@ struct SettingsContentView: View {
         Image(systemName: hasAllBYOKKeys ? "checkmark.seal.fill" : "key.fill")
           .foregroundColor(hasAllBYOKKeys ? OmiColors.success : OmiColors.textTertiary)
         VStack(alignment: .leading, spacing: 4) {
-          Text(hasAllBYOKKeys ? "Free plan active" : "Use Omi free forever")
+          Text(hasAllBYOKKeys ? "Free plan active" : "Use Jarvis free forever")
             .scaledFont(size: 14, weight: .semibold)
             .foregroundColor(OmiColors.textPrimary)
           Text(
             hasAllBYOKKeys
-              ? "You're paying your own providers. Omi skips the subscription charge. Keys stay on this Mac."
+              ? "You're paying your own providers. Jarvis skips the subscription charge. Keys stay on this Mac."
               : "Provide all four keys (OpenAI, Anthropic, Gemini, Deepgram) to switch to the free plan. Keys stay on this Mac — we never store them on our servers."
           )
           .scaledFont(size: 12)
@@ -5674,7 +5674,7 @@ struct SettingsContentView: View {
 
             VStack(alignment: .leading, spacing: 4) {
               HStack(spacing: 6) {
-                Text("omi")
+                Text("jarvis")
                   .scaledFont(size: 18, weight: .bold)
                   .foregroundColor(OmiColors.textPrimary)
 
@@ -5848,7 +5848,7 @@ struct SettingsContentView: View {
               .scaledFont(size: 15, weight: .medium)
               .foregroundColor(OmiColors.textPrimary)
 
-            Text("Help us improve omi")
+            Text("Help us improve jarvis")
               .scaledFont(size: 13)
               .foregroundColor(OmiColors.textTertiary)
           }
@@ -6091,7 +6091,7 @@ struct SettingsContentView: View {
 
   private var currentPlanSubtitle: String {
     if isLoadingSubscription {
-      return "Fetching subscription details from omi."
+      return "Fetching subscription details from jarvis."
     }
     if let detail = currentPlanBillingDetail {
       return detail

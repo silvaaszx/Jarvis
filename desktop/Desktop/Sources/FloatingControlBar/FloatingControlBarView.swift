@@ -221,7 +221,7 @@ struct FloatingControlBarView: View {
     private func openFloatingBarSettings() {
         // Bring main window to front and navigate to floating bar settings
         NSApp.activate()
-        for window in NSApp.windows where window.title.hasPrefix("Omi") {
+        for window in NSApp.windows where window.title.hasPrefix("Jarvis") {
             window.makeKeyAndOrderFront(nil)
             break
         }
@@ -238,7 +238,7 @@ struct FloatingControlBarView: View {
                     .transition(.opacity)
             } else if isHovering || state.showingAIConversation {
                 VStack(spacing: 1) {
-                    compactButton(title: "Ask omi / Collapse", keys: shortcutSettings.askOmiShortcut.displayTokens) {
+                    compactButton(title: "Ask jarvis / Collapse", keys: shortcutSettings.askOmiShortcut.displayTokens) {
                         onAskAI()
                     }
 

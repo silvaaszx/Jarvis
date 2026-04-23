@@ -212,7 +212,7 @@ struct ShortcutsSettingsSection: View {
         .foregroundColor(OmiColors.textPrimary)
 
       shortcutRow(
-        label: "Ask omi",
+        label: "Ask Jarvis",
         keys: settings.askOmiEnabled ? settings.askOmiShortcut.displayLabel : "Disabled")
       shortcutRow(label: "Toggle floating bar", keys: "\u{2318}\\")
       shortcutRow(
@@ -410,7 +410,7 @@ struct ShortcutsSettingsSection: View {
     switch target {
     case .askOmi:
       if event.type == .flagsChanged {
-        captureError = "Ask omi needs a non-modifier key."
+        captureError = "Ask Jarvis needs a non-modifier key."
         return true
       }
       guard

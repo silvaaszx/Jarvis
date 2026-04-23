@@ -21,7 +21,7 @@ struct UsageLimitPopupView: View {
     case "transcription":
       return "You've hit your monthly limit. Upgrade to make sure your new recordings aren't lost."
     case "chat", "floating_bar":
-      return "You've hit your monthly limit. Upgrade to keep chatting with Omi without restrictions."
+      return "You've hit your monthly limit. Upgrade to keep chatting with Jarvis without restrictions."
     default:
       return "You've hit your monthly limit. Upgrade to make sure your new recordings aren't lost."
     }

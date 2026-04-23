@@ -758,7 +758,7 @@ class ChatToolExecutor {
         return "granted"
       } else {
         return
-          "pending - user needs to toggle Screen Recording for omi in System Settings, then quit and reopen the app"
+          "pending - user needs to toggle Screen Recording for Jarvis in System Settings, then quit and reopen the app"
       }
 
     case "microphone":
@@ -778,7 +778,7 @@ class ChatToolExecutor {
       if appState.hasAccessibilityPermission {
         return "granted"
       } else {
-        return "pending - user needs to toggle Accessibility for omi in System Settings"
+        return "pending - user needs to toggle Accessibility for Jarvis in System Settings"
       }
 
     case "automation":
@@ -789,7 +789,7 @@ class ChatToolExecutor {
       if appState.hasAutomationPermission {
         return "granted"
       } else {
-        return "pending - user needs to toggle Automation for omi in System Settings"
+        return "pending - user needs to toggle Automation for Jarvis in System Settings"
       }
 
     case "full_disk_access":
@@ -806,7 +806,7 @@ class ChatToolExecutor {
         return "granted"
       } else {
         return
-          "pending - user needs to toggle Full Disk Access for omi in System Settings > Privacy & Security > Full Disk Access"
+          "pending - user needs to toggle Full Disk Access for Jarvis in System Settings > Privacy & Security > Full Disk Access"
       }
 
     default:

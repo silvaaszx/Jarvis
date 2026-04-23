@@ -223,7 +223,7 @@ enum ViewExporter {
             .fill(Color.white.opacity(0.9))
             .frame(width: 28, height: 28)
             .overlay(Text("O").font(.system(size: 14, weight: .bold)).foregroundColor(.black))
-          Text("Omi")
+          Text("Jarvis")
             .font(.system(size: 18, weight: .semibold))
             .foregroundColor(.white)
           Spacer()
