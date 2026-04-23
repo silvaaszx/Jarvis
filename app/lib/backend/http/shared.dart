@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 
+import 'package:omi/backend/auth.dart';
 import 'package:omi/backend/http/clock_skew_detector.dart';
 import 'package:omi/backend/http/http_pool_manager.dart';
 import 'package:omi/backend/preferences.dart';
@@ -51,6 +52,11 @@ Future<String> getAuthHeader() async {
       // should only throw if the user is signed in but the token is not found
       // if the user is not signed in, the token will always be empty
       throw AuthTokenUnavailableException('No auth token found');
+    }
+    // Try Supabase JWT as fallback (new auth flow)
+    final supabaseToken = await getSupabaseToken();
+    if (supabaseToken != null) {
+      return 'Bearer $supabaseToken';
     }
   }
   return 'Bearer ${SharedPreferencesUtil().authToken}';
