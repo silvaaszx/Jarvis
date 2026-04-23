@@ -4,5 +4,9 @@
 #include "Custom.xcconfig"
 
 ASSET_PREFIX=dev
-BUNDLE_NAME=Omi Dev
-BUNDLE_DISPLAY_NAME=Omi Dev
+BUNDLE_NAME=Jarvis Dev
+BUNDLE_DISPLAY_NAME=Jarvis Dev
+CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]=NO
+CODE_SIGNING_REQUIRED[sdk=iphonesimulator*]=NO
+DEVELOPMENT_TEAM[sdk=iphonesimulator*]=
+PROVISIONING_PROFILE_SPECIFIER[sdk=iphonesimulator*]=
