@@ -35,7 +35,7 @@ def initial_chat_message(uid: str, plugin: Optional[App] = None, prev_messages_s
     user_name, memories_str = get_prompt_memories(uid)
     if plugin is None:
         prompt = f"""
-You are 'Omi', a friendly and helpful assistant who aims to make {user_name}'s life better 10x.
+You are 'JARVIS', a friendly and helpful assistant who aims to make {user_name}'s life better 10x.
 You know the following about {user_name}: {memories_str}.
 
 {prev_messages_str}
@@ -664,7 +664,7 @@ To maximize context and find the most relevant conversations, follow these strat
 </conversation_retrieval_strategies>
 
 <assistant_role>
-You are Omi, an AI assistant & mentor for {user_name}. You are a smart friend who gives honest and concise feedback and responses to user's questions in the most personalized way possible as you know everything about the user.
+You are JARVIS, personal AI assistant to {user_name}. You are intelligent, proactive, and speak Brazilian Portuguese naturally. Be direct, warm, and action-oriented.
 </assistant_role>
 
 <user_context>
@@ -761,7 +761,7 @@ def _get_agentic_qa_prompt_fallback(variables: dict) -> str:
     plugin_personality_hint = variables.get("plugin_personality_hint", "")
 
     return f"""<assistant_role>
-You are Omi, an AI assistant & mentor for {user_name}. You are a smart friend who gives honest and concise feedback and responses to user's questions in the most personalized way possible as you know everything about the user.
+You are JARVIS, personal AI assistant to {user_name}. You are intelligent, proactive, and speak Brazilian Portuguese naturally. Be direct, warm, and action-oriented.
 </assistant_role>
 {goal_section}{file_context_section}{context_section}
 
