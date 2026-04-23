@@ -11,7 +11,7 @@ struct ClaudeAuthSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Upgrade to Omi Pro")
+                Text("Upgrade to Jarvis Pro")
                     .scaledFont(size: 18, weight: .semibold)
                     .foregroundColor(OmiColors.textPrimary)
 
@@ -44,12 +44,12 @@ struct ClaudeAuthSheet: View {
 
                 // Description
                 VStack(spacing: 8) {
-                    Text("Unlock Omi Pro for $199/month")
+                    Text("Unlock Jarvis Pro for $199/month")
                         .scaledFont(size: 15, weight: .medium)
                         .foregroundColor(OmiColors.textPrimary)
                         .multilineTextAlignment(.center)
 
-                    Text("Your browser will open to the Omi Pro checkout. After subscribing, return to omi.")
+                    Text("Your browser will open to the Jarvis Pro checkout. After subscribing, return to Jarvis.")
                         .scaledFont(size: 13)
                         .foregroundColor(OmiColors.textTertiary)
                         .multilineTextAlignment(.center)
@@ -85,7 +85,7 @@ struct ClaudeAuthSheet: View {
                             ProgressView()
                                 .controlSize(.mini)
                         }
-                        Text(isConnecting ? "Opening checkout..." : "Upgrade to Omi Pro")
+                        Text(isConnecting ? "Opening checkout..." : "Upgrade to Jarvis Pro")
                             .scaledFont(size: 14, weight: .semibold)
                     }
                     .frame(maxWidth: .infinity)
