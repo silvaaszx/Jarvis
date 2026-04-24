@@ -15,7 +15,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-_async_openai = AsyncOpenAI()
+_async_openai = None
+
+
+def _get_async_openai():
+    global _async_openai
+    if _async_openai is None:
+        _async_openai = AsyncOpenAI()
+    return _async_openai
 
 
 class File:
@@ -131,7 +138,7 @@ class FileChatTool:
         try:
             contents = [{"type": "text", "text": question}]
             for file in files:
-                file_content = await _async_openai.files.content(file.openai_file_id)
+                file_content = await _get_async_openai().files.content(file.openai_file_id)
                 b64 = base64.b64encode(file_content.read()).decode('utf-8')
                 mime = file.mime_type or 'image/png'
                 contents.append(
@@ -141,7 +148,7 @@ class FileChatTool:
                     }
                 )
 
-            stream = await _async_openai.chat.completions.create(
+            stream = await _get_async_openai().chat.completions.create(
                 model="gpt-4.1",
                 messages=[{"role": "user", "content": contents}],
                 stream=True,
