@@ -217,7 +217,7 @@ watchfiles==0.22.0
 wcwidth==0.2.13
 webrtcvad==2.0.10
 websockets==12.0
-yarl==1.9.4
+yarl==1.22.0
 stripe==11.3.0
 supabase>=2.0.0
 typesense==0.21.0
