@@ -8,7 +8,6 @@ load_dotenv()  # No-op if .env doesn't exist (production); loads local dev secre
 logging.basicConfig(level=logging.INFO)
 
 from fastapi import FastAPI
-from utils.supabase_client import get_supabase
 
 from routers import (
     chat,
@@ -66,7 +65,6 @@ log_langsmith_status()
 # Validate Stripe price IDs so misconfigured plans fail loud
 validate_stripe_price_ids()
 
-get_supabase()  # inicializa singleton na startup
 
 app = FastAPI()
 
