@@ -190,11 +190,14 @@ class HumeClient:
         return {"result": HumeJobResponseModel.from_dict(resp.json())}
 
 
-hume_client = HumeClient(
-    api_key=os.getenv('HUME_API_KEY'),
-    callback_url=os.getenv('HUME_CALLBACK_URL'),
-)
+_hume_client = None
 
 
 def get_hume():
-    return hume_client
+    global _hume_client
+    if _hume_client is None:
+        _hume_client = HumeClient(
+            api_key=os.getenv('HUME_API_KEY'),
+            callback_url=os.getenv('HUME_CALLBACK_URL'),
+        )
+    return _hume_client
