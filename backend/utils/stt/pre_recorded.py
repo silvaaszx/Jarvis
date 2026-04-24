@@ -16,7 +16,14 @@ logger = logging.getLogger(__name__)
 # Initialize Deepgram client for pre-recorded transcription
 # WARN: the pre-recorded transcription is available on deepgram cloud
 _deepgram_options = DeepgramClientOptions(options={"keepalive": "true"})
-_deepgram_client = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'), _deepgram_options)
+_deepgram_client = None
+
+
+def _get_deepgram_client():
+    global _deepgram_client
+    if _deepgram_client is None:
+        _deepgram_client = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'), _deepgram_options)
+    return _deepgram_client
 
 
 def _deepgram_client_for_request() -> DeepgramClient:
@@ -24,7 +31,7 @@ def _deepgram_client_for_request() -> DeepgramClient:
     byok = get_byok_key('deepgram')
     if byok:
         return DeepgramClient(byok, _deepgram_options)
-    return _deepgram_client
+    return _get_deepgram_client()
 
 
 # Languages supported by nova-3
