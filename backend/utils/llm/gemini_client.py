@@ -45,6 +45,26 @@ def get_gemini_client() -> genai.Client:
     return _client
 
 
+async def jarvis_chat_stream(message: str, history: Optional[list] = None):
+    """Stream Jarvis response token-by-token. Yields text chunks."""
+    client = get_gemini_client()
+    contents = []
+    for turn in history or []:
+        role = turn.get("role", "user")
+        parts = turn.get("parts", [])
+        text = parts[0] if parts else ""
+        contents.append(types.Content(role=role, parts=[types.Part(text=text)]))
+    contents.append(types.Content(role="user", parts=[types.Part(text=message)]))
+
+    async for chunk in await client.aio.models.generate_content_stream(
+        model=GEMINI_MODEL,
+        contents=contents,
+        config=types.GenerateContentConfig(system_instruction=JARVIS_SYSTEM_PROMPT),
+    ):
+        if chunk.text:
+            yield chunk.text
+
+
 async def jarvis_chat(message: str, history: Optional[list] = None) -> str:
     """
     Send a message to Jarvis (Gemini 2.5 Flash) and return the response.
