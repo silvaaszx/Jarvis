@@ -119,9 +119,18 @@ _non_lexical_utterances_pattern = re.compile(
     r'\b(' + '|'.join(re.escape(word) for word in _non_lexical_utterances) + r')\b', re.IGNORECASE
 )
 
-# Initialize the translation client globally
-_client = translate_v3.TranslationServiceClient()
+# Lazy-load the translation client to survive missing credentials at import time
+_client = None
 _parent = f"projects/{PROJECT_ID}/locations/global"
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = translate_v3.TranslationServiceClient()
+    return _client
+
+
 _mime_type = "text/plain"
 
 # Initialize langdetect for consistent results
@@ -492,7 +501,7 @@ class TranslationService:
                 chunk_indices = uncached_indices[chunk_start:chunk_end]
 
                 try:
-                    response = _client.translate_text(
+                    response = _get_client().translate_text(
                         contents=chunk,
                         parent=_parent,
                         mime_type=_mime_type,
@@ -586,7 +595,7 @@ class TranslationService:
                 chunk_hashes = uncached_hashes[chunk_start:chunk_end]
 
                 try:
-                    response = _client.translate_text(
+                    response = _get_client().translate_text(
                         contents=chunk,
                         parent=_parent,
                         mime_type=_mime_type,
@@ -643,7 +652,7 @@ class TranslationService:
             return result
 
         try:
-            response = _client.translate_text(
+            response = _get_client().translate_text(
                 contents=[text],
                 parent=_parent,
                 mime_type=_mime_type,
