@@ -165,10 +165,22 @@ if is_dg_self_hosted:
     deepgram_cloud_options.url = dg_self_hosted_url
     logger.info(f"Using Deepgram self-hosted at: {dg_self_hosted_url}")
 
-deepgram = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'), deepgram_options)
+_deepgram = None
+_deepgram_beta = None
 
-# unused fn
-deepgram_beta = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'), deepgram_cloud_options)
+
+def _get_deepgram():
+    global _deepgram
+    if _deepgram is None:
+        _deepgram = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'), deepgram_options)
+    return _deepgram
+
+
+def _get_deepgram_beta():
+    global _deepgram_beta
+    if _deepgram_beta is None:
+        _deepgram_beta = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'), deepgram_cloud_options)
+    return _deepgram_beta
 
 
 async def process_audio_dg(
@@ -330,11 +342,11 @@ def _deepgram_client_for_request() -> DeepgramClient:
     there's no per-user billing concept there.
     """
     if is_dg_self_hosted:
-        return deepgram
+        return _get_deepgram()
     byok = get_byok_key('deepgram')
     if byok:
         return DeepgramClient(byok, deepgram_cloud_options)
-    return deepgram
+    return _get_deepgram()
 
 
 def connect_to_deepgram(
