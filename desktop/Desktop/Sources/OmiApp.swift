@@ -90,7 +90,7 @@ struct OMIApp: App {
 
     let version =
       Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
-    let baseName = Self.launchMode == .rewind ? "jarvis Rewind" : UpdateChannel.appDisplayName
+    let baseName = Self.launchMode == .rewind ? "Jarvis Rewind" : UpdateChannel.appDisplayName
     return version.isEmpty ? baseName : "\(baseName) v\(version)"
   }
 
@@ -685,18 +685,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     if let button = item.button {
       if OMIApp.launchMode == .rewind {
         if let icon = NSImage(
-          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "jarvis Rewind")
+          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "Jarvis Rewind")
         {
           icon.isTemplate = true
           button.image = icon
         }
-      } else if let iconURL = Bundle.resourceBundle.url(
-        forResource: "omi_text_logo", withExtension: "png"),
-        let icon = NSImage(contentsOf: iconURL)
-      {
+      } else if let icon = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Jarvis") {
         icon.isTemplate = true
-        let aspect = icon.size.width / icon.size.height
-        icon.size = NSSize(width: 16 * aspect, height: 16)
         button.image = icon
       }
     }
@@ -746,39 +741,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     log("AppDelegate: [MENUBAR] NSStatusItem created successfully")
 
     let displayName =
-      Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "jarvis"
+      Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "Jarvis"
 
-    // Set up the button with icon — use "omi" text logo (not a circle)
+    // Set up the button with icon — waveform SF Symbol
     if let button = statusBarItem.button {
       if OMIApp.launchMode == .rewind {
         // Rewind mode uses SF Symbol
         if let icon = NSImage(
-          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "jarvis Rewind")
+          systemSymbolName: "clock.arrow.circlepath", accessibilityDescription: "Jarvis Rewind")
         {
           icon.isTemplate = true
           button.image = icon
           log("AppDelegate: [MENUBAR] Rewind icon set successfully")
         }
-      } else if let iconURL = Bundle.resourceBundle.url(
-        forResource: "omi_text_logo", withExtension: "png"),
-        let icon = NSImage(contentsOf: iconURL)
-      {
+      } else if let icon = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Jarvis") {
         icon.isTemplate = true
-        // Scale to menu bar height (16pt) with proportional width
-        let aspect = icon.size.width / icon.size.height
-        icon.size = NSSize(width: 16 * aspect, height: 16)
         button.image = icon
         button.imagePosition = .imageOnly
-        log("AppDelegate: [MENUBAR] Omi text logo set successfully (size: \(icon.size))")
-      } else {
-        // Fallback to SF Symbol
-        if let icon = NSImage(systemSymbolName: "waveform", accessibilityDescription: "jarvis") {
-          icon.isTemplate = true
-          button.image = icon
-        }
-        log("AppDelegate: [MENUBAR] WARNING - Failed to load omi_text_logo, using fallback")
+        log("AppDelegate: [MENUBAR] Jarvis waveform icon set successfully")
       }
-      button.toolTip = OMIApp.launchMode == .rewind ? "jarvis Rewind" : displayName
+      button.toolTip = OMIApp.launchMode == .rewind ? "Jarvis Rewind" : displayName
     } else {
       log("AppDelegate: [MENUBAR] WARNING - statusBarItem.button is nil")
     }

@@ -93,7 +93,7 @@ substep() {
 
 # App configuration
 BINARY_NAME="Omi Computer"  # Package.swift target — binary paths, pkill, CFBundleExecutable
-APP_NAME="${OMI_APP_NAME:-Omi Dev}"
+APP_NAME="${OMI_APP_NAME:-Jarvis Dev}"
 IS_NAMED_BUNDLE=false
 [ -n "${OMI_APP_NAME:-}" ] && IS_NAMED_BUNDLE=true
 
@@ -597,6 +597,9 @@ fi
 auth_debug "BEFORE signing: $(defaults read "$BUNDLE_ID" auth_isSignedIn 2>&1 || true)"
 
 step "Removing extended attributes (xattr -cr)..."
+# Ensure write permission on bundled dylibs (Homebrew copies them read-only)
+chmod u+w "$APP_BUNDLE/Contents/Frameworks/libwebp.7.dylib" 2>/dev/null || true
+chmod u+w "$APP_BUNDLE/Contents/Frameworks/libsharpyuv.0.dylib" 2>/dev/null || true
 xattr -cr "$APP_BUNDLE"
 
 step "Signing app with hardened runtime..."
