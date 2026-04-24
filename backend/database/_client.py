@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 import uuid
 
@@ -7,11 +8,34 @@ from google.cloud import firestore
 
 if os.environ.get('SERVICE_ACCOUNT_JSON'):
     service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
-    # create google-credentials.json
     with open('google-credentials.json', 'w') as f:
         json.dump(service_account_info, f)
+    os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', 'google-credentials.json')
 
-db = firestore.Client()
+_db = None
+
+
+def _get_db():
+    global _db
+    if _db is None:
+        try:
+            _db = firestore.Client()
+        except Exception as e:
+            logging.warning('Firestore client unavailable: %s', e)
+    return _db
+
+
+class _LazyDB:
+    """Proxy that defers Firestore init until first attribute access."""
+
+    def __getattr__(self, name):
+        client = _get_db()
+        if client is None:
+            raise RuntimeError('Firestore client not initialised — check Google credentials')
+        return getattr(client, name)
+
+
+db = _LazyDB()
 
 
 def get_users_uid():
