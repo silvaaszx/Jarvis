@@ -38,15 +38,17 @@ class _OpenAIChatProxy:
 
     __slots__ = ('_model', '_default', '_ctor_kwargs')
 
-    def __init__(self, model: str, default: ChatOpenAI, ctor_kwargs: Dict[str, Any]):
+    def __init__(self, model: str, default: ChatOpenAI = None, ctor_kwargs: Dict[str, Any] = None):
         object.__setattr__(self, '_model', model)
         object.__setattr__(self, '_default', default)
-        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs)
+        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs or {})
 
     def _resolve(self) -> ChatOpenAI:
         byok = get_byok_key('openai')
         if byok:
             return _cached_openai_chat(self._model, byok, self._ctor_kwargs)
+        if self._default is None:
+            object.__setattr__(self, '_default', ChatOpenAI(model=self._model, **self._ctor_kwargs))
         return self._default
 
     def __getattr__(self, name: str):
@@ -65,13 +67,15 @@ class _AnthropicClientProxy:
 
     __slots__ = ('_default',)
 
-    def __init__(self, default: anthropic.AsyncAnthropic):
+    def __init__(self, default: anthropic.AsyncAnthropic = None):
         object.__setattr__(self, '_default', default)
 
     def _resolve(self) -> anthropic.AsyncAnthropic:
         byok = get_byok_key('anthropic')
         if byok:
             return _cached_anthropic(byok)
+        if self._default is None:
+            object.__setattr__(self, '_default', anthropic.AsyncAnthropic())
         return self._default
 
     def __getattr__(self, name: str):
@@ -92,10 +96,10 @@ class _OpenRouterGeminiProxy:
 
     __slots__ = ('_default', '_direct_model', '_ctor_kwargs')
 
-    def __init__(self, default: ChatOpenAI, direct_model: str, ctor_kwargs: Dict[str, Any]):
+    def __init__(self, default: ChatOpenAI = None, direct_model: str = '', ctor_kwargs: Dict[str, Any] = None):
         object.__setattr__(self, '_default', default)
         object.__setattr__(self, '_direct_model', direct_model)
-        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs)
+        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs or {})
 
     def _resolve(self) -> ChatOpenAI:
         byok = get_byok_key('gemini')
@@ -105,6 +109,8 @@ class _OpenRouterGeminiProxy:
                 byok,
                 {**self._ctor_kwargs, 'base_url': _GEMINI_OPENAI_BASE_URL},
             )
+        if self._default is None:
+            object.__setattr__(self, '_default', ChatOpenAI(model=self._direct_model, **self._ctor_kwargs))
         return self._default
 
     def __getattr__(self, name: str):
@@ -122,10 +128,10 @@ class _OpenAIEmbeddingsProxy:
 
     __slots__ = ('_model', '_default', '_ctor_kwargs')
 
-    def __init__(self, model: str, default: OpenAIEmbeddings, ctor_kwargs: Dict[str, Any]):
+    def __init__(self, model: str, default: OpenAIEmbeddings = None, ctor_kwargs: Dict[str, Any] = None):
         object.__setattr__(self, '_model', model)
         object.__setattr__(self, '_default', default)
-        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs)
+        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs or {})
 
     def _resolve(self) -> OpenAIEmbeddings:
         byok = get_byok_key('openai')
@@ -136,6 +142,8 @@ class _OpenAIEmbeddingsProxy:
                 inst = OpenAIEmbeddings(model=self._model, api_key=byok, **self._ctor_kwargs)
                 _openai_cache[cache_key] = inst
             return inst
+        if self._default is None:
+            object.__setattr__(self, '_default', OpenAIEmbeddings(model=self._model, **self._ctor_kwargs))
         return self._default
 
     def __getattr__(self, name: str):
@@ -174,13 +182,11 @@ def _cached_anthropic(api_key: str) -> anthropic.AsyncAnthropic:
 
 def _byok_openai(model: str, **ctor_kwargs) -> _OpenAIChatProxy:
     """Build a module-level ChatOpenAI that transparently routes to BYOK if set."""
-    default = ChatOpenAI(model=model, **ctor_kwargs)
-    return _OpenAIChatProxy(model=model, default=default, ctor_kwargs=ctor_kwargs)
+    return _OpenAIChatProxy(model=model, default=None, ctor_kwargs=ctor_kwargs)
 
 
 # Anthropic client for chat agent (module-level, BYOK-aware)
-_default_anthropic_client = anthropic.AsyncAnthropic()  # uses ANTHROPIC_API_KEY env var
-anthropic_client = _AnthropicClientProxy(_default_anthropic_client)
+anthropic_client = _AnthropicClientProxy()
 
 
 def get_anthropic_client() -> anthropic.AsyncAnthropic:
@@ -578,19 +584,18 @@ _persona_mini_kwargs = dict(
     stream_options={"include_usage": True},
     callbacks=[_usage_callback],
 )
-_persona_mini_default = ChatOpenAI(
-    model="google/gemini-flash-1.5-8b",
-    api_key=os.environ.get('OPENROUTER_API_KEY'),
-    base_url="https://openrouter.ai/api/v1",
-    default_headers={"X-Title": "Omi Chat"},
-    **_persona_mini_kwargs,
-)
 # BYOK Gemini → route direct to Google's OpenAI-compat endpoint.
 # Model name drops the `google/` prefix: gemini-flash-1.5-8b on Google direct.
 llm_persona_mini_stream = _OpenRouterGeminiProxy(
-    default=_persona_mini_default,
+    default=None,
     direct_model="gemini-flash-1.5-8b",
-    ctor_kwargs=_persona_mini_kwargs,
+    ctor_kwargs={
+        "model": "google/gemini-flash-1.5-8b",
+        "api_key": os.environ.get('OPENROUTER_API_KEY'),
+        "base_url": "https://openrouter.ai/api/v1",
+        "default_headers": {"X-Title": "Omi Chat"},
+        **_persona_mini_kwargs,
+    },
 )
 # Anthropic-via-OpenRouter. BYOK Anthropic users route to Anthropic's
 # OpenAI-compat endpoint directly, avoiding Omi's OpenRouter bill.
@@ -601,23 +606,14 @@ _persona_medium_kwargs = dict(
     stream_options={"include_usage": True},
     callbacks=[_usage_callback],
 )
-_persona_medium_default = ChatOpenAI(
-    model="anthropic/claude-3.5-sonnet",
-    api_key=os.environ.get('OPENROUTER_API_KEY'),
-    base_url="https://openrouter.ai/api/v1",
-    default_headers={"X-Title": "Omi Chat"},
-    **_persona_medium_kwargs,
-)
-
-
 class _AnthropicViaOpenAIProxy:
     """Route to Anthropic's OpenAI-compat endpoint when BYOK Anthropic key is set."""
 
     __slots__ = ('_default', '_ctor_kwargs')
 
-    def __init__(self, default: ChatOpenAI, ctor_kwargs: Dict[str, Any]):
+    def __init__(self, default: ChatOpenAI = None, ctor_kwargs: Dict[str, Any] = None):
         object.__setattr__(self, '_default', default)
-        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs)
+        object.__setattr__(self, '_ctor_kwargs', ctor_kwargs or {})
 
     def _resolve(self) -> ChatOpenAI:
         byok = get_byok_key('anthropic')
@@ -627,6 +623,14 @@ class _AnthropicViaOpenAIProxy:
                 byok,
                 {**self._ctor_kwargs, 'base_url': _ANTHROPIC_OPENAI_BASE_URL},
             )
+        if self._default is None:
+            object.__setattr__(self, '_default', ChatOpenAI(
+                model="anthropic/claude-3.5-sonnet",
+                api_key=os.environ.get('OPENROUTER_API_KEY'),
+                base_url="https://openrouter.ai/api/v1",
+                default_headers={"X-Title": "Omi Chat"},
+                **self._ctor_kwargs,
+            ))
         return self._default
 
     def __getattr__(self, name: str):
@@ -640,7 +644,7 @@ class _AnthropicViaOpenAIProxy:
 
 
 llm_persona_medium_stream = _AnthropicViaOpenAIProxy(
-    default=_persona_medium_default,
+    default=None,
     ctor_kwargs=_persona_medium_kwargs,
 )
 
@@ -649,26 +653,24 @@ _gemini_flash_kwargs = dict(
     temperature=0.7,
     callbacks=[_usage_callback],
 )
-_gemini_flash_default = ChatOpenAI(
-    model="google/gemini-3-flash-preview",
-    api_key=os.environ.get('OPENROUTER_API_KEY'),
-    base_url="https://openrouter.ai/api/v1",
-    default_headers={"X-Title": "Omi Wrapped"},
-    **_gemini_flash_kwargs,
-)
 llm_gemini_flash = _OpenRouterGeminiProxy(
-    default=_gemini_flash_default,
+    default=None,
     direct_model="gemini-3-flash-preview",
-    ctor_kwargs=_gemini_flash_kwargs,
+    ctor_kwargs={
+        "model": "google/gemini-3-flash-preview",
+        "api_key": os.environ.get('OPENROUTER_API_KEY'),
+        "base_url": "https://openrouter.ai/api/v1",
+        "default_headers": {"X-Title": "Omi Wrapped"},
+        **_gemini_flash_kwargs,
+    },
 )
 
 # ---------------------------------------------------------------------------
 # Embeddings, parser, utilities
 # ---------------------------------------------------------------------------
-_embeddings_default = OpenAIEmbeddings(model="text-embedding-3-large")
 embeddings = _OpenAIEmbeddingsProxy(
     model="text-embedding-3-large",
-    default=_embeddings_default,
+    default=None,
     ctor_kwargs={},
 )
 parser = PydanticOutputParser(pydantic_object=Structured)
