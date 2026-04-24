@@ -5,13 +5,20 @@ from typing import Dict
 
 import typesense
 
-client = typesense.Client(
-    {
-        'nodes': [{'host': os.getenv('TYPESENSE_HOST'), 'port': os.getenv('TYPESENSE_HOST_PORT'), 'protocol': 'https'}],
-        'api_key': os.getenv('TYPESENSE_API_KEY'),
-        'connection_timeout_seconds': 2,
-    }
-)
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = typesense.Client(
+            {
+                'nodes': [{'host': os.getenv('TYPESENSE_HOST'), 'port': os.getenv('TYPESENSE_HOST_PORT'), 'protocol': 'https'}],
+                'api_key': os.getenv('TYPESENSE_API_KEY'),
+                'connection_timeout_seconds': 2,
+            }
+        )
+    return _client
 
 
 def search_conversations(
@@ -44,7 +51,7 @@ def search_conversations(
             'page': page,
         }
 
-        results = client.collections['conversations'].documents.search(search_parameters)
+        results = _get_client().collections['conversations'].documents.search(search_parameters)
         memories = []
         for item in results['hits']:
             doc = item['document']
