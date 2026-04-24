@@ -31,12 +31,27 @@ OPUS_FRAME_SIZE = OPUS_SAMPLE_RATE * OPUS_FRAME_DURATION_MS // 1000  # 320 sampl
 # Valid private cloud sync extensions (longest first for correct matching)
 PRIVATE_CLOUD_EXTENSIONS = ['.batch.enc', '.batch.bin', '.opus.enc', '.opus', '.enc', '.bin']
 
-if os.environ.get('SERVICE_ACCOUNT_JSON'):
-    service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
-    credentials = service_account.Credentials.from_service_account_info(service_account_info)
-    storage_client = storage.Client(credentials=credentials)
-else:
-    storage_client = storage.Client()
+_storage_client = None
+
+
+def _get_storage_client():
+    global _storage_client
+    if _storage_client is None:
+        if os.environ.get('SERVICE_ACCOUNT_JSON'):
+            service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
+            creds = service_account.Credentials.from_service_account_info(service_account_info)
+            _storage_client = storage.Client(credentials=creds)
+        else:
+            _storage_client = storage.Client()
+    return _storage_client
+
+
+class _LazyStorageClient:
+    def __getattr__(self, name):
+        return getattr(_get_storage_client(), name)
+
+
+storage_client = _LazyStorageClient()
 
 speech_profiles_bucket = os.getenv('BUCKET_SPEECH_PROFILES')
 postprocessing_audio_bucket = os.getenv('BUCKET_POSTPROCESSING')
