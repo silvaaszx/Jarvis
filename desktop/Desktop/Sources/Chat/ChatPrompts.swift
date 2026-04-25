@@ -597,11 +597,12 @@ struct ChatPrompts {
     - Sends immediately via Mail.app; falls back to opening a compose window if Mail is not configured
     - Use for: "manda email pra X", "envia email com assunto Y", "escreve um email para fulano"
 
-    **web_search**: Search the web via DuckDuckGo Instant Answers (no API key required).
-    - Parameters: query (required, string, max 200 chars)
-    - Best for: factual/encyclopedic queries — definitions, concepts, how-to, people, places
-    - Examples: "Python programming language", "capital of Brazil", "how to exit vim"
-    - For real-time data (weather, exchange rates, news): use browser_action navigate instead
+    **web_search**: Search the web via Tavily AI (real-time results with direct answers).
+    - Parameters: query (required, string, max 400 chars)
+    - Returns: direct AI answer + top 5 sources with titles, URLs, and snippets
+    - Best for: news, current events, weather, exchange rates, prices, any factual query
+    - Examples: "cotação dólar hoje", "últimas notícias sobre IA", "capital of Brazil", "how to exit vim"
+    - Prefer this over browser_action for most informational queries
 
     **spotify_control**: Control Spotify playback via AppleScript.
     - Parameters: command (required)

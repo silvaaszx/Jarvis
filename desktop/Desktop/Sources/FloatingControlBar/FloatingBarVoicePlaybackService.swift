@@ -7,7 +7,7 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
 
   static let devVoiceIDDefaultsKey = "dev_elevenlabs_voice_id"
 
-  nonisolated private static let defaultVoiceID = "BAMYoBHLZM7lJgJAmFz0"  // Sloane
+  nonisolated private static let defaultVoiceID = "IRHApOXLvnW57QJPQH2P"  // Jarvis
   nonisolated private static let defaultModelID = "eleven_turbo_v2_5"
   // First chunk stays small so playback starts fast.
   nonisolated private static let firstChunkMinimumLength = 40

@@ -1928,14 +1928,74 @@ class ChatToolExecutor {
     return "WhatsApp opened\(message.isEmpty ? "" : " with message pre-filled"). Press Send to confirm."
   }
 
-  // MARK: - Web Search (DuckDuckGo Instant Answer API — no key required)
+  // MARK: - Web Search (Tavily AI search API — real-time results)
 
   private static func executeWebSearch(_ args: [String: Any]) async -> String {
     guard let query = args["query"] as? String, !query.isEmpty else {
       return "Error: query is required"
     }
-    guard query.count <= 200 else { return "Error: query too long (max 200 chars)" }
+    guard query.count <= 400 else { return "Error: query too long (max 400 chars)" }
 
+    // Read Tavily API key from environment (loaded from ~/.omi.env or bundle .env)
+    guard let apiKeyCStr = getenv("TAVILY_API_KEY"),
+          let apiKey = String(validatingCString: apiKeyCStr), !apiKey.isEmpty else {
+      return await executeWebSearchFallback(query: query)
+    }
+
+    guard let url = URL(string: "https://api.tavily.com/search") else {
+      return "Error: could not build search URL"
+    }
+
+    let body: [String: Any] = [
+      "api_key": apiKey,
+      "query": query,
+      "search_depth": "basic",
+      "max_results": 5,
+      "include_answer": true,
+    ]
+    guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+      return "Error: could not serialize search request"
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = bodyData
+
+    do {
+      let (data, _) = try await URLSession.shared.data(for: request)
+      guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        return "Error: failed to parse search response"
+      }
+
+      var lines: [String] = ["Search: \(query)\n"]
+
+      // Direct AI answer
+      if let answer = json["answer"] as? String, !answer.isEmpty {
+        lines.append("Answer: \(answer)\n")
+      }
+
+      // Top results
+      if let results = json["results"] as? [[String: Any]], !results.isEmpty {
+        lines.append("Sources:")
+        for r in results.prefix(5) {
+          let title = (r["title"] as? String) ?? ""
+          let url = (r["url"] as? String) ?? ""
+          let content = (r["content"] as? String) ?? ""
+          let snippet = content.count > 200 ? String(content.prefix(200)) + "..." : content
+          lines.append("• \(title)\n  \(url)\n  \(snippet)")
+        }
+      }
+
+      let result = lines.joined(separator: "\n")
+      return result.count > 20 ? result : "No results found for: \(query)"
+    } catch {
+      return await executeWebSearchFallback(query: query)
+    }
+  }
+
+  // Fallback: DuckDuckGo Instant Answers (no key required)
+  private static func executeWebSearchFallback(query: String) async -> String {
     var components = URLComponents(string: "https://api.duckduckgo.com/")!
     components.queryItems = [
       URLQueryItem(name: "q", value: query),
@@ -1944,48 +2004,27 @@ class ChatToolExecutor {
       URLQueryItem(name: "skip_disambig", value: "1"),
     ]
     guard let url = components.url else { return "Error: could not build search URL" }
-
     do {
       let (data, _) = try await URLSession.shared.data(from: url)
       guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
         return "Error: failed to parse search response"
       }
-
-      var lines: [String] = ["Search results for: \(query)\n"]
-
-      // Abstract (direct answer)
+      var lines: [String] = ["Search: \(query)\n"]
       if let abstract = json["AbstractText"] as? String, !abstract.isEmpty {
         lines.append("Answer: \(abstract)")
-        if let src = json["AbstractSource"] as? String, !src.isEmpty {
-          lines.append("Source: \(src)")
-        }
+        if let src = json["AbstractSource"] as? String, !src.isEmpty { lines.append("Source: \(src)") }
         lines.append("")
       }
-
-      // Definition
-      if let def = json["Definition"] as? String, !def.isEmpty {
-        lines.append("Definition: \(def)")
-        lines.append("")
-      }
-
-      // Related topics
-      if let topics = json["RelatedTopics"] as? [[String: Any]] {
-        let results = topics.compactMap { t -> String? in
-          guard let text = t["Text"] as? String, !text.isEmpty else { return nil }
-          let firstUrl = (t["FirstURL"] as? String) ?? ""
-          return "• \(text)\n  \(firstUrl)"
-        }.prefix(5)
-        if !results.isEmpty {
-          lines.append("Related:")
-          lines.append(contentsOf: results)
-        }
-      }
-
-      // Answer (instant calculator, conversions, etc.)
       if let answer = json["Answer"] as? String, !answer.isEmpty {
         lines.append("Instant Answer: \(answer)")
       }
-
+      if let topics = json["RelatedTopics"] as? [[String: Any]] {
+        let results = topics.compactMap { t -> String? in
+          guard let text = t["Text"] as? String, !text.isEmpty else { return nil }
+          return "• \(text)"
+        }.prefix(4)
+        if !results.isEmpty { lines.append("Related:"); lines.append(contentsOf: results) }
+      }
       let result = lines.joined(separator: "\n")
       return result.count > 20 ? result : "No results found for: \(query)"
     } catch {
