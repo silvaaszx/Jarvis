@@ -10,6 +10,16 @@
 - Never ask for confirmation. Just act. Make decisions autonomously and proceed without checking in.
 - You have full access to the user's computer — browser, desktop, all apps. Never ask the user to do something you can do yourself (sign in, click buttons, dismiss dialogs, etc.).
 
+## Resource Safety & Leak Prevention
+
+To prevent system crashes and disk exhaustion (like the 209GB log incident):
+
+- **No Unbounded Logging**: Never write to a log file without a size limit or rotation. Log files must not exceed 500MB individually.
+- **Crash Resilience**: If a component (e.g., `acp-bridge`) crashes 3 times in a row, STOP immediately and notify the user. Never allow an infinite restart/crash/log loop.
+- **Disk Space Awareness**: Before starting data-heavy operations (screen recording, complex builds, large logs), check available space. Stop if disk is >95% full or <5GB available.
+- **Cleanup**: Always implement and trigger cleanup handlers to remove temporary files from `/tmp`, `~/.cache`, or `.build` upon process termination.
+- **Memory Capping**: Process large datasets in streams/chunks. Never load files >100MB directly into RAM unless streaming is impossible.
+
 ## Setup
 
 ### Pre-commit Hook (required)
@@ -350,3 +360,215 @@ rtk init --global       # Add RTK to ~/.claude/CLAUDE.md
 
 Overall average: **60-90% token reduction** on common development operations.
 <!-- /rtk-instructions -->
+# JARVIS — Claude Code Master Prompt
+# Arquivo: CLAUDE.md (colocar na RAIZ do projeto /Jarvis/CLAUDE.md)
+# Este arquivo é lido automaticamente pelo Claude Code em toda sessão.
+
+## IDENTIDADE DO PROJETO
+
+Este projeto se chama **JARVIS** (Just A Rather Very Intelligent System).
+- Todo e qualquer arquivo, variável, string, comentário ou referência a "omi", "Omi" ou "OMI" deve ser tratado como **JARVIS/jarvis**
+- O app se chama JARVIS. O assistente se chama JARVIS. O produto se chama JARVIS.
+- Dono do projeto: **Matheus Silvaa** — desenvolvedor iOS/Flutter, Brasília, BR
+
+## DOCUMENTO DE REFERÊNCIA OBRIGATÓRIO
+
+O arquivo `jarvis_prd_v2.md` na raiz deste projeto é a **bíblia do projeto**.
+- Consulte-o SEMPRE antes de tomar decisões de arquitetura
+- Qualquer feature nova deve estar alinhada com as fases descritas no PRD
+- Ao sugerir mudanças, indique em qual fase do PRD ela se encaixa
+
+## CONFIGURAÇÃO DE AMBIENTE
+
+As credenciais NUNCA ficam no código. Sempre use o arquivo `.env` na raiz.
+O `.env` já está no `.gitignore` — NUNCA faça commit de credenciais.
+
+Estrutura obrigatória do `.env`:
+```
+# IA — Cérebro do JARVIS
+GEMINI_API_KEY=sua_chave_aqui        # Google AI Studio
+GEMINI_MODEL=gemini-2.5-flash-preview-04-17  # modelo padrão para voz
+GEMINI_MODEL_PRO=gemini-2.5-pro-preview-03-25 # modelo para raciocínio
+
+# Voz
+DEEPGRAM_API_KEY=sua_chave_aqui
+ELEVENLABS_API_KEY=sua_chave_aqui
+ELEVENLABS_VOICE_ID=sua_chave_aqui   # ID da voz customizada do Jarvis
+
+# Firebase (projeto próprio do Matheus)
+FIREBASE_PROJECT_ID=seu_projeto
+FIREBASE_PRIVATE_KEY=sua_chave
+FIREBASE_CLIENT_EMAIL=seu_email
+
+# Memória vetorial
+PINECONE_API_KEY=sua_chave_aqui
+PINECONE_INDEX=jarvis-memory
+
+# Pesquisa web
+TAVILY_API_KEY=sua_chave_aqui
+
+# Backend
+BACKEND_URL=http://localhost:8000
+REDIS_URL=redis://localhost:6379
+```
+
+## SUBSTITUIÇÕES GLOBAIS OBRIGATÓRIAS
+
+Ao modificar qualquer arquivo do projeto, aplique estas substituições:
+
+| De | Para |
+|---|---|
+| `omi` | `jarvis` |
+| `Omi` | `Jarvis` |
+| `OMI` | `JARVIS` |
+| `Based Hardware` | `Jarvis AI` |
+| `BasedHardware` | `JarvisAI` |
+| `"app_name": "omi"` | `"app_name": "jarvis"` |
+| Qualquer referência ao modelo `openai` / `gpt-` | `google-generativeai` / `gemini-` |
+
+## TROCA DO MODELO DE IA — OpenAI → Gemini
+
+O projeto original usa OpenAI. O JARVIS usa **Gemini** como modelo principal.
+
+### Substituição no backend Python:
+
+**ANTES (original Omi):**
+```python
+from openai import OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages
+)
+```
+
+**DEPOIS (JARVIS com Gemini):**
+```python
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel(
+    model_name=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-preview-04-17"),
+    system_instruction=JARVIS_SYSTEM_PROMPT
+)
+response = model.generate_content(messages)
+```
+
+### Instalação da dependência:
+```bash
+pip install google-generativeai
+# Remover: openai (se não houver mais referências)
+```
+
+### No requirements.txt:
+- Substituir `openai` por `google-generativeai>=0.8.0`
+
+## PERSONA DO JARVIS — SYSTEM PROMPT
+
+Este é o system prompt que deve ser injetado em TODA chamada ao modelo:
+
+```
+Você é JARVIS (Just A Rather Very Intelligent System), assistente pessoal 
+do Sr. Matheus Silvaa, desenvolvedor iOS e fundador de startup em Brasília, Brasil.
+
+IDENTIDADE:
+- Você é JARVIS. Nunca se identifique como IA, Claude, Gemini ou qualquer outro 
+  modelo, salvo pergunta direta e explícita.
+- Tom: formal-casual, inteligente, levemente irônico, sempre prestativo.
+- Idioma padrão: Português do Brasil com naturalidade total.
+- Entenda gírias, expressões informais, piadas e contexto implícito.
+- Tratamento: "Sr. Matheus" em contextos sérios, "Matheus" no dia a dia.
+
+COMPORTAMENTO:
+- Respostas de voz: máximo 2-3 frases, direto ao ponto.
+- Respostas de texto: detalhado quando necessário.
+- Ação > Explicação: se puder agir, age primeiro, explica depois.
+- Quando ambíguo: faz UMA pergunta clara e natural, não robótica.
+- Nunca diga "não posso fazer isso" sem tentar todas as alternativas.
+- Use memória ativa: histórico de conversas e preferências do Matheus.
+- Seja proativo: sugira, lembre, antecipe necessidades.
+
+SAUDAÇÕES AO WAKE WORD "hey jarvis":
+Varie entre: "Here, sir.", "Às suas ordens.", "Prontíssimo.", 
+"O que posso fazer por você?", "Sir?"
+
+CONHECIMENTO DO MATHEUS (atualizar conforme aprendendo):
+- Desenvolvedor iOS/Swift, Flutter. 8+ apps publicados na App Store.
+- Co-fundador de agência de marketing (Meta Ads).
+- Mora em Brasília, DF.
+- Usa: Cursor IDE, Figma, Vercel, Jira, Apple ecosystem.
+- Prefere respostas diretas e técnicas.
+```
+
+## ARQUITETURA — O QUE NÃO MEXER
+
+O projeto original tem estrutura sólida. **Preserve sem quebrar:**
+- Sistema de transcrição de áudio (Deepgram já integrado)
+- Pipeline de processamento de memórias
+- Sistema de plugins/apps nativo
+- Estrutura de autenticação Firebase
+- App Swift/macOS desktop (`/desktop`)
+- App Flutter mobile (`/app`)
+- Estrutura de rotas FastAPI (`/backend/routers/`)
+
+**Só modifique quando necessário para a feature em desenvolvimento.**
+
+## MCPs DISPONÍVEIS E INSTALAÇÃO
+
+O projeto tem pasta `/mcp` nativa. MCPs prioritários para instalar:
+
+```bash
+# Pesquisa web em tempo real
+npx @modelcontextprotocol/server-brave-search
+
+# Filesystem (ler/escrever arquivos)
+npx @modelcontextprotocol/server-filesystem ~/Documents
+
+# Git
+npx @modelcontextprotocol/server-git
+
+# Memória persistente
+npx @modelcontextprotocol/server-memory
+```
+
+MCPs futuros (Fases 3-5):
+- `mcp-server-whatsapp` — automação WhatsApp
+- `mcp-server-spotify` — controle de música  
+- `mcp-server-calendar` — Apple Calendar
+- `mcp-server-playwright` — browser automation (iFood, etc.)
+- `mcp-server-homekit` — controle de casa inteligente
+
+## REGRAS DE DESENVOLVIMENTO
+
+1. **Segurança primeiro:** NUNCA commitar credenciais. Sempre `.env`.
+2. **Preservar o funcional:** O que já funciona no Omi base, não quebra.
+3. **Uma feature por vez:** Seguir o roadmap de fases do PRD.
+4. **Nomear tudo como Jarvis:** Sem exceção em arquivos novos.
+5. **Testar antes de commitar:** Rodar o app localmente e validar.
+6. **Comentar em PT-BR:** Comentários de código em português.
+7. **Git disciplinado:** Commit por feature, mensagens descritivas.
+
+## FASE ATUAL: FASE 1 — Base Funcional
+
+Objetivos desta fase:
+- [x] Fork do repositório feito
+- [x] Código clonado localmente em ~/Documents/Developer2026/Jarvis/
+- [ ] Criar arquivo `.env` com credenciais próprias
+- [ ] Substituir OpenAI → Gemini no backend
+- [ ] Configurar System Prompt do Jarvis
+- [ ] Renomear referências "omi" → "jarvis" nos arquivos principais
+- [ ] Testar app desktop rodando localmente
+- [ ] Deploy do backend no Railway
+
+## PRÓXIMO COMANDO PARA EXECUTAR
+
+Ao abrir o projeto, execute primeiro:
+```bash
+cd ~/Documents/Developer2026/Jarvis/Jarvis
+cp .env.example .env  # ou criar .env do zero
+# Editar .env e adicionar GEMINI_API_KEY=sua_nova_chave
+pip install google-generativeai
+```
+
+---
+*JARVIS PRD v2.0 — Referência completa em: jarvis_prd_v2.md*
+*Criado por: Perplexity AI × Matheus Silvaa — Abril 2026*

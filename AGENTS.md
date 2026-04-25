@@ -16,6 +16,16 @@ These rules apply to Codex when working in this repository.
 - Never kill, stop, or restart the production macOS app (`/Applications/omi.app`, bundle id `com.omi.computer-macos`) during local development or testing.
 - Development scripts/commands must target only dev app processes (for example `Omi Dev.app` / `com.omi.desktop-dev`), never production.
 
+## Resource Safety & Leak Prevention
+
+To prevent system crashes and disk exhaustion (like the 209GB log incident):
+
+- **No Unbounded Logging**: Never write to a log file without a size limit or rotation. Log files must not exceed 500MB individually.
+- **Crash Resilience**: If a component (e.g., `acp-bridge`) crashes 3 times in a row, STOP immediately and notify the user. Never allow an infinite restart/crash/log loop.
+- **Disk Space Awareness**: Before starting data-heavy operations (screen recording, complex builds, large logs), check available space. Stop if disk is >95% full or <5GB available.
+- **Cleanup**: Always implement and trigger cleanup handlers to remove temporary files from `/tmp`, `~/.cache`, or `.build` upon process termination.
+- **Memory Capping**: Process large datasets in streams/chunks. Never load files >100MB directly into RAM unless streaming is impossible.
+
 ## Coding Guidelines
 
 ### Backend
