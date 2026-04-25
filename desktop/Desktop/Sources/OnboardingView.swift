@@ -140,6 +140,7 @@ struct OnboardingView: View {
             AnalyticsManager.shared.onboardingStepCompleted(step: 1, stepName: "Language")
             currentStep = 2
           },
+          onBack: { currentStep = 0 },
           onForceComplete: handleOnboardingComplete
         )
       } else if currentStep == 2 {
@@ -151,6 +152,7 @@ struct OnboardingView: View {
             AnalyticsManager.shared.onboardingStepCompleted(step: 2, stepName: "HowDidYouHear")
             currentStep = 3
           },
+          onBack: { currentStep = 1 },
           onForceComplete: handleOnboardingComplete
         )
       } else if currentStep == 3 {
@@ -163,6 +165,7 @@ struct OnboardingView: View {
             AnalyticsManager.shared.onboardingStepCompleted(step: 3, stepName: "Trust")
             currentStep = 4
           },
+          onBack: { currentStep = 2 },
           onForceComplete: handleOnboardingComplete
         )
       } else if currentStep == 4 {

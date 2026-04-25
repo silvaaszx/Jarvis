@@ -6,6 +6,7 @@ struct OnboardingLanguageStepView: View {
   let stepIndex: Int
   let totalSteps: Int
   let onContinue: () -> Void
+  let onBack: (() -> Void)?
   let onForceComplete: (() -> Void)?
 
   @State private var showingCustomLanguage = false
@@ -18,6 +19,7 @@ struct OnboardingLanguageStepView: View {
       eyebrow: "Language",
       title: "Pick your language.",
       description: "Jarvis will use it for prompts and transcripts.",
+      onBack: onBack,
       onForceComplete: onForceComplete
     ) {
       VStack(alignment: .leading, spacing: 18) {

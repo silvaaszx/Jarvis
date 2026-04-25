@@ -27,7 +27,7 @@
     <true/>
 
     <key>KeepAlive</key>
-    <true/>
+    <false/>
 
     <key>StandardOutPath</key>
     <string>/tmp/jarvis-wake-word.log</string>

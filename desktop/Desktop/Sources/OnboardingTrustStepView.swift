@@ -7,6 +7,7 @@ struct OnboardingTrustStepView: View {
   let stepIndex: Int
   let totalSteps: Int
   let onContinue: () -> Void
+  let onBack: (() -> Void)?
   let onForceComplete: (() -> Void)?
 
   var body: some View {
@@ -19,6 +20,7 @@ struct OnboardingTrustStepView: View {
       description:
         "Jarvis is open source and private by design. During setup, we’ll ask for these permissions to understand your work and help in the right places:",
       layoutMode: .centered,
+      onBack: onBack,
       onForceComplete: onForceComplete
     ) {
       VStack(spacing: 18) {

@@ -24,6 +24,7 @@ struct OnboardingStepScaffold<Content: View>: View {
   let rightPaneFooterText: String?
   let showsSkip: Bool
   let onSkip: (() -> Void)?
+  let onBack: (() -> Void)?
   let onForceComplete: (() -> Void)?
   let content: Content
 
@@ -39,6 +40,7 @@ struct OnboardingStepScaffold<Content: View>: View {
     rightPaneFooterText: String? = nil,
     showsSkip: Bool = false,
     onSkip: (() -> Void)? = nil,
+    onBack: (() -> Void)? = nil,
     onForceComplete: (() -> Void)? = nil,
     @ViewBuilder content: () -> Content
   ) {
@@ -53,6 +55,7 @@ struct OnboardingStepScaffold<Content: View>: View {
     self.rightPaneFooterText = rightPaneFooterText
     self.showsSkip = showsSkip
     self.onSkip = onSkip
+    self.onBack = onBack
     self.onForceComplete = onForceComplete
     self.content = content()
   }
@@ -129,6 +132,18 @@ struct OnboardingStepScaffold<Content: View>: View {
 
   private var header: some View {
     HStack {
+      // Botão voltar — sempre visível se onBack fornecido e não é o primeiro passo
+      if let onBack, stepIndex > 0 {
+        Button(action: onBack) {
+          Image(systemName: "chevron.left")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(OmiColors.textTertiary)
+            .frame(width: 32, height: 32)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+      }
+
       OnboardingLogoMark(onForceComplete: onForceComplete)
 
       Spacer()
@@ -211,15 +226,7 @@ struct OnboardingLogoMark: View {
   }
 
   private func onboardingLogoImage() -> NSImage? {
-    guard
-      let logoURL = Bundle.resourceBundle.url(forResource: "omi_text_logo", withExtension: "png"),
-      let loadedLogoImage = NSImage(contentsOf: logoURL)
-    else {
-      return nil
-    }
-    let logoImage = loadedLogoImage.copy() as? NSImage ?? loadedLogoImage
-    logoImage.isTemplate = true
-    return logoImage
+    return nil  // Jarvis: usa fallback Text("jarvis")
   }
 }
 

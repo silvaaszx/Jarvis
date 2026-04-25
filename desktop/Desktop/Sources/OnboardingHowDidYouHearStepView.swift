@@ -5,6 +5,7 @@ struct OnboardingHowDidYouHearStepView: View {
   let stepIndex: Int
   let totalSteps: Int
   let onContinue: () -> Void
+  let onBack: (() -> Void)?
   let onForceComplete: (() -> Void)?
 
   @State private var selectedSource: String?
@@ -33,6 +34,7 @@ struct OnboardingHowDidYouHearStepView: View {
       eyebrow: "Quick question",
       title: "How did you hear\nabout Jarvis?",
       description: "",
+      onBack: onBack,
       onForceComplete: onForceComplete
     ) {
       VStack(alignment: .leading, spacing: 12) {

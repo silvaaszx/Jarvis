@@ -248,7 +248,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Do NOT call NSWorkspace.setIcon(forFile:) — it writes a resource fork onto
     // the .app bundle, which breaks the code signature and prevents Sparkle
     // auto-updates from working ("An error occurred while running the updater").
-    if let iconURL = Bundle.resourceBundle.url(forResource: "omi_app_icon", withExtension: "png"),
+    if let iconURL = Bundle.resourceBundle.url(forResource: "app_launcher_icon", withExtension: "png"),
       let icon = NSImage(contentsOf: iconURL)
     {
       let size = icon.size
@@ -505,7 +505,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       }
     }
 
+    // Iniciar wake word daemon se estiver instalado como launchd agent
+    startWakeWordIfNeeded()
+
     log("AppDelegate: applicationDidFinishLaunching completed")
+  }
+
+  /// Inicia o wake word Python daemon via launchctl (se instalado).
+  /// Falha silenciosamente se o agente não estiver instalado.
+  private func startWakeWordIfNeeded() {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+    p.arguments = ["start", "com.jarvis.wakeword"]
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
+    try? p.run()
+    log("AppDelegate: wake word daemon start solicitado")
   }
 
   /// Start a timer that sends Sentry session snapshots every 5 minutes
@@ -1049,6 +1064,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
+    // Encerrar o wake word daemon Python ao sair do app
+    // (launchd tem KeepAlive: false, então não reinicia automaticamente)
+    let killWakeWord = Process()
+    killWakeWord.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+    killWakeWord.arguments = ["-f", "jarvis_wake_word.py"]
+    try? killWakeWord.run()
+    log("AppDelegate: wake word daemon encerrado")
+
     // Mark clean exit so crash detection works on next launch
     UserDefaults.standard.set(true, forKey: "lastSessionCleanExit")
 

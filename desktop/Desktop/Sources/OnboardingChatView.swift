@@ -497,17 +497,11 @@ struct OnboardingChatView: View {
 
   @ViewBuilder
   private var omiAvatar: some View {
-    if let logoURL = Bundle.resourceBundle.url(forResource: "herologo", withExtension: "png"),
-      let logoImage = NSImage(contentsOf: logoURL)
-    {
-      Image(nsImage: logoImage)
-        .resizable()
-        .scaledToFit()
-        .frame(width: 20, height: 20)
-        .frame(width: 32, height: 32)
-        .background(OmiColors.backgroundTertiary)
-        .clipShape(Circle())
-    }
+    Image(systemName: "waveform.circle.fill")
+      .resizable()
+      .scaledToFit()
+      .frame(width: 32, height: 32)
+      .foregroundColor(OmiColors.purplePrimary)
   }
 
   /// Human-readable label for a permission type
@@ -884,15 +878,7 @@ struct OnboardingChatView: View {
   }
 
   private func whiteTemplateLogoImage() -> NSImage? {
-    guard
-      let logoURL = Bundle.resourceBundle.url(forResource: "omi_text_logo", withExtension: "png"),
-      let loadedLogoImage = NSImage(contentsOf: logoURL)
-    else {
-      return nil
-    }
-    let logoImage = loadedLogoImage.copy() as? NSImage ?? loadedLogoImage
-    logoImage.isTemplate = true
-    return logoImage
+    return nil  // Jarvis: usa fallback Text("jarvis")
   }
 
   private func isGoalPriorityQuestion(_ text: String) -> Bool {
@@ -1885,18 +1871,12 @@ struct OnboardingChatBubble: View {
     if hasVisibleContent {
       HStack(alignment: .top, spacing: 12) {
         if message.sender == .ai {
-          // Omi logo
-          if let logoURL = Bundle.resourceBundle.url(forResource: "herologo", withExtension: "png"),
-            let logoImage = NSImage(contentsOf: logoURL)
-          {
-            Image(nsImage: logoImage)
-              .resizable()
-              .scaledToFit()
-              .frame(width: 20, height: 20)
-              .frame(width: 32, height: 32)
-              .background(OmiColors.backgroundTertiary)
-              .clipShape(Circle())
-          }
+          // Jarvis avatar
+          Image(systemName: "waveform.circle.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 32, height: 32)
+            .foregroundColor(OmiColors.purplePrimary)
         }
 
         VStack(alignment: message.sender == .user ? .trailing : .leading, spacing: 4) {
