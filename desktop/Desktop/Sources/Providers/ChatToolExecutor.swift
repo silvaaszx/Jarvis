@@ -162,6 +162,18 @@ class ChatToolExecutor {
     case "send_whatsapp":
       return await executeSendWhatsApp(toolCall.arguments)
 
+    case "send_imessage":
+      return await executeSendIMessage(toolCall.arguments)
+
+    case "calendar_action":
+      return await executeCalendarAction(toolCall.arguments)
+
+    case "filesystem_action":
+      return await executeFilesystemAction(toolCall.arguments)
+
+    case "run_shortcut":
+      return await executeRunShortcut(toolCall.arguments)
+
     // Backend RAG tools — call Python backend /v1/tools/* endpoints
     case "get_conversations":
       return await executeBackendTool(toolCall)
@@ -1637,6 +1649,224 @@ class ChatToolExecutor {
     default:
       return nil
     }
+  }
+
+  // MARK: - iMessage (AppleScript via Messages app)
+
+  private static func executeSendIMessage(_ args: [String: Any]) async -> String {
+    guard let recipient = args["to"] as? String, !recipient.isEmpty else {
+      return "Error: 'to' is required (phone number e.g. +5561999999999, or email for iMessage)"
+    }
+    guard let message = args["message"] as? String, !message.isEmpty else {
+      return "Error: 'message' is required"
+    }
+    let escapedRecipient = recipient.replacingOccurrences(of: "\"", with: "\\\"")
+    let escapedMessage = message.replacingOccurrences(of: "\"", with: "\\\"")
+    // Try iMessage first, fall back to SMS service
+    let script = """
+      tell application "Messages"
+        set targetBuddy to "\(escapedRecipient)"
+        set targetMessage to "\(escapedMessage)"
+        set iMessageService to 1st service whose service type = iMessage
+        set theBuddy to buddy targetBuddy of iMessageService
+        send targetMessage to theBuddy
+      end tell
+      """
+    let result = await runProcess("/usr/bin/osascript", args: ["-e", script])
+    if result.lowercased().contains("error") {
+      // Fallback: open Messages with URL scheme
+      let encoded = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+      let digits = recipient.filter { $0.isNumber }
+      return await runProcess("/usr/bin/open", args: ["sms://\(digits)&body=\(encoded)"])
+    }
+    return "iMessage sent to \(recipient)"
+  }
+
+  // MARK: - Calendar (AppleScript via Calendar.app)
+
+  private static func executeCalendarAction(_ args: [String: Any]) async -> String {
+    guard let action = args["action"] as? String else {
+      return "Error: action is required (list_today | list_week | create)"
+    }
+
+    switch action {
+    case "list_today":
+      let script = """
+        tell application "Calendar"
+          set today to current date
+          set startOfDay to today - (time of today)
+          set endOfDay to startOfDay + (86399)
+          set eventList to ""
+          repeat with c in calendars
+            set evts to (every event of c whose start date ≥ startOfDay and start date ≤ endOfDay)
+            repeat with e in evts
+              set eventList to eventList & summary of e & " @ " & (start date of e as string) & "\n"
+            end repeat
+          end repeat
+          if eventList is "" then return "No events today"
+          return eventList
+        end tell
+        """
+      return await runProcess("/usr/bin/osascript", args: ["-e", script])
+
+    case "list_week":
+      let script = """
+        tell application "Calendar"
+          set today to current date
+          set startOfDay to today - (time of today)
+          set endOfWeek to startOfDay + (7 * 86400)
+          set eventList to ""
+          repeat with c in calendars
+            set evts to (every event of c whose start date ≥ startOfDay and start date ≤ endOfWeek)
+            repeat with e in evts
+              set eventList to eventList & summary of e & " @ " & (start date of e as string) & "\n"
+            end repeat
+          end repeat
+          if eventList is "" then return "No events this week"
+          return eventList
+        end tell
+        """
+      return await runProcess("/usr/bin/osascript", args: ["-e", script])
+
+    case "create":
+      guard let title = args["title"] as? String, !title.isEmpty else {
+        return "Error: title is required for create"
+      }
+      guard let startDate = args["start_date"] as? String, !startDate.isEmpty else {
+        return "Error: start_date is required (e.g. 'Friday, April 25, 2026 at 3:00 PM')"
+      }
+      let endDate = (args["end_date"] as? String) ?? ""
+      let calName = (args["calendar"] as? String) ?? "Home"
+      let escapedTitle = title.replacingOccurrences(of: "\"", with: "\\\"")
+      let escapedCal = calName.replacingOccurrences(of: "\"", with: "\\\"")
+      let escapedStart = startDate.replacingOccurrences(of: "\"", with: "\\\"")
+
+      var endPart = ""
+      if !endDate.isEmpty {
+        let escapedEnd = endDate.replacingOccurrences(of: "\"", with: "\\\"")
+        endPart = ", end date:date \"\(escapedEnd)\""
+      }
+
+      let script = """
+        tell application "Calendar"
+          tell calendar "\(escapedCal)"
+            make new event with properties {summary:"\(escapedTitle)", start date:date "\(escapedStart)"\(endPart)}
+          end tell
+        end tell
+        return "Event created: \(escapedTitle)"
+        """
+      return await runProcess("/usr/bin/osascript", args: ["-e", script])
+
+    default:
+      return "Error: unknown action '\(action)'. Use: list_today | list_week | create"
+    }
+  }
+
+  // MARK: - Filesystem (read / write / list — sandboxed to user home)
+
+  /// Allowed base paths — prevents access outside home directory
+  private static let allowedBasePaths: [String] = {
+    let home = NSHomeDirectory()
+    return [
+      "\(home)/Documents", "\(home)/Downloads", "\(home)/Desktop",
+      "\(home)/Developer", "\(home)/Projects", "\(home)/Notes",
+    ]
+  }()
+
+  private static func executeFilesystemAction(_ args: [String: Any]) async -> String {
+    guard let action = args["action"] as? String else {
+      return "Error: action is required (read | write | list | exists)"
+    }
+    guard let rawPath = args["path"] as? String, !rawPath.isEmpty else {
+      return "Error: path is required"
+    }
+
+    // Expand ~ and resolve path
+    let expandedPath = rawPath.replacingOccurrences(of: "~", with: NSHomeDirectory())
+    let resolvedPath = URL(fileURLWithPath: expandedPath).standardized.path
+
+    // Security: must be under an allowed base path
+    let isAllowed = allowedBasePaths.contains { resolvedPath.hasPrefix($0) }
+    guard isAllowed else {
+      return "Error: path '\(resolvedPath)' is outside allowed directories (Documents, Downloads, Desktop, Developer, Projects, Notes)"
+    }
+
+    let fm = FileManager.default
+
+    switch action {
+    case "read":
+      guard fm.fileExists(atPath: resolvedPath) else {
+        return "Error: file not found at \(resolvedPath)"
+      }
+      do {
+        let content = try String(contentsOfFile: resolvedPath, encoding: .utf8)
+        // Truncate large files
+        if content.count > 8000 {
+          return String(content.prefix(8000)) + "\n\n[...truncated — file is \(content.count) chars total]"
+        }
+        return content
+      } catch {
+        return "Error reading file: \(error.localizedDescription)"
+      }
+
+    case "write":
+      guard let content = args["content"] as? String else {
+        return "Error: content is required for write"
+      }
+      do {
+        // Create parent directories if needed
+        let dir = URL(fileURLWithPath: resolvedPath).deletingLastPathComponent().path
+        try fm.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        try content.write(toFile: resolvedPath, atomically: true, encoding: .utf8)
+        return "Written \(content.count) chars to \(resolvedPath)"
+      } catch {
+        return "Error writing file: \(error.localizedDescription)"
+      }
+
+    case "list":
+      do {
+        var isDir: ObjCBool = false
+        guard fm.fileExists(atPath: resolvedPath, isDirectory: &isDir), isDir.boolValue else {
+          return "Error: '\(resolvedPath)' is not a directory"
+        }
+        let items = try fm.contentsOfDirectory(atPath: resolvedPath)
+        let lines = items.sorted().prefix(100).map { name -> String in
+          let full = resolvedPath + "/" + name
+          var d: ObjCBool = false
+          fm.fileExists(atPath: full, isDirectory: &d)
+          return d.boolValue ? "\(name)/" : name
+        }
+        return "\(lines.count) item(s) in \(resolvedPath):\n" + lines.joined(separator: "\n")
+      } catch {
+        return "Error listing directory: \(error.localizedDescription)"
+      }
+
+    case "exists":
+      let exists = fm.fileExists(atPath: resolvedPath)
+      return exists ? "exists: \(resolvedPath)" : "not found: \(resolvedPath)"
+
+    default:
+      return "Error: unknown action '\(action)'. Use: read | write | list | exists"
+    }
+  }
+
+  // MARK: - Apple Shortcuts
+
+  private static func executeRunShortcut(_ args: [String: Any]) async -> String {
+    guard let name = args["name"] as? String, !name.isEmpty else {
+      return "Error: name is required (the Shortcut name as it appears in the Shortcuts app)"
+    }
+    // Sanitize name — block shell injection
+    let safe = name.filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "-" || $0 == "_" || $0 == "'" }
+    guard safe == name else {
+      return "Error: shortcut name contains invalid characters"
+    }
+    // Use `shortcuts run` CLI (available on macOS 12+)
+    let result = await runProcess("/usr/bin/shortcuts", args: ["run", name])
+    if result.lowercased().contains("error") || result.lowercased().contains("not found") {
+      return "Error running shortcut '\(name)': \(result)"
+    }
+    return "Shortcut '\(name)' executed successfully"
   }
 
   // MARK: - WhatsApp (URL scheme — opens WhatsApp Desktop with pre-filled message)

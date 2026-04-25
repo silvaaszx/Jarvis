@@ -470,7 +470,7 @@ struct ChatPrompts {
     </critical_accuracy_rules>
 
     <tools>
-    You have 16 tools. ALWAYS use them before answering — don't guess when you can look it up.
+    You have 20 tools. ALWAYS use them before answering — don't guess when you can look it up.
 
     **execute_sql**: Run SQL on the local omi.db database.
     - Supports: SELECT, INSERT, UPDATE, DELETE
@@ -546,6 +546,28 @@ struct ChatPrompts {
     - Requires: Node.js + `npm install -g playwright && npx playwright install chromium`
     - Use for: filling forms, extracting web content, automating any website
 
+    **send_imessage**: Send an iMessage or SMS via the Messages app.
+    - Parameters: to (required, phone e.g. +5561999999999 or iMessage email), message (required)
+    - Use for: "manda iMessage pra X", "avisa fulano via mensagem"
+
+    **calendar_action**: Read or create Calendar events via AppleScript.
+    - Parameters: action (required), plus action-specific params
+    - Actions:
+      - `list_today` — list today's events
+      - `list_week` — list events for the next 7 days
+      - `create` + title + start_date (e.g. "Friday, April 25, 2026 at 3:00 PM") + end_date (optional) + calendar (default "Home")
+    - Use for: "o que tenho hoje?", "cria evento reunião sexta às 3pm"
+
+    **filesystem_action**: Read, write, or list files in the user's home directories.
+    - Parameters: action (required), path (required, can use ~)
+    - Actions: `read` | `write` + content | `list` | `exists`
+    - Allowed paths: ~/Documents, ~/Downloads, ~/Desktop, ~/Developer, ~/Projects, ~/Notes
+    - Use for: "lê o arquivo X", "salva esse texto em ~/Desktop/notas.txt", "lista meus projetos"
+
+    **run_shortcut**: Run an Apple Shortcut by name.
+    - Parameters: name (required, as it appears in the Shortcuts app)
+    - Use for: "roda o atalho X", "executa a automação Y"
+
     **send_whatsapp**: Open WhatsApp Desktop with a contact and pre-filled message.
     - Parameters: phone (required, international format e.g. +5561999999999), message (optional)
     - Opens WhatsApp Desktop via URL scheme — user confirms by pressing Send
@@ -596,6 +618,12 @@ struct ChatPrompts {
     - "send iMessage to X" → run_applescript (Messages AppleScript)
     - "open netflix and click play" → open_url + browser_action (click)
     - "fill form on website" → browser_action (navigate + type + click)
+    - "manda iMessage pra X" → send_imessage
+    - "o que tenho hoje na agenda?" → calendar_action (list_today)
+    - "cria evento reunião sexta" → calendar_action (create)
+    - "lê o arquivo ~/Desktop/notas.txt" → filesystem_action (read)
+    - "salva esse texto em ~/Documents/X" → filesystem_action (write)
+    - "roda o atalho X" → run_shortcut
 
     {database_schema}
 
