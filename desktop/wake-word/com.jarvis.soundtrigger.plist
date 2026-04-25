@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Jarvis Sound Trigger — launchd agent (Fase 4)
+
+  Instalar:
+    cp com.jarvis.soundtrigger.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.jarvis.soundtrigger.plist
+
+  Desinstalar:
+    launchctl unload ~/Library/LaunchAgents/com.jarvis.soundtrigger.plist
+    rm ~/Library/LaunchAgents/com.jarvis.soundtrigger.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.jarvis.soundtrigger</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/matheussilva/Documents/Developer2026/Jarvis/Jarvis/desktop/wake-word/.venv/bin/python3</string>
+        <string>-u</string>
+        <string>/Users/matheussilva/Documents/Developer2026/Jarvis/Jarvis/desktop/wake-word/jarvis_sound_trigger.py</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- KeepAlive FALSE — não reinicia em loop se crashar (Resource Safety) -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/jarvis-sound-trigger.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/jarvis-sound-trigger-error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

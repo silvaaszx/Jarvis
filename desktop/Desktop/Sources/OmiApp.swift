@@ -507,6 +507,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // Iniciar wake word daemon se estiver instalado como launchd agent
     startWakeWordIfNeeded()
+    startSoundTriggerIfNeeded()
 
     log("AppDelegate: applicationDidFinishLaunching completed")
   }
@@ -521,6 +522,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     p.standardError = FileHandle.nullDevice
     try? p.run()
     log("AppDelegate: wake word daemon start solicitado")
+  }
+
+  /// Inicia o sound trigger (palmas/assobio) via launchctl (Fase 4).
+  /// Falha silenciosamente se o agente não estiver instalado.
+  private func startSoundTriggerIfNeeded() {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+    p.arguments = ["start", "com.jarvis.soundtrigger"]
+    p.standardOutput = FileHandle.nullDevice
+    p.standardError = FileHandle.nullDevice
+    try? p.run()
+    log("AppDelegate: sound trigger daemon start solicitado")
   }
 
   /// Start a timer that sends Sentry session snapshots every 5 minutes
@@ -1071,6 +1084,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     killWakeWord.arguments = ["-f", "jarvis_wake_word.py"]
     try? killWakeWord.run()
     log("AppDelegate: wake word daemon encerrado")
+
+    let killSoundTrigger = Process()
+    killSoundTrigger.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+    killSoundTrigger.arguments = ["-f", "jarvis_sound_trigger.py"]
+    try? killSoundTrigger.run()
+    log("AppDelegate: sound trigger daemon encerrado")
 
     // Mark clean exit so crash detection works on next launch
     UserDefaults.standard.set(true, forKey: "lastSessionCleanExit")
