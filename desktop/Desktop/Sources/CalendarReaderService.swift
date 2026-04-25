@@ -92,6 +92,11 @@ private struct CalBrowserConfig {
         keychainService: "Microsoft Edge Safe Storage",
         userDataPath: "\(home)/Library/Application Support/Microsoft Edge"
       ),
+      BrowserFamily(
+        name: "Comet",
+        keychainService: "Comet Safe Storage",
+        userDataPath: "\(home)/Library/Application Support/Comet"
+      ),
     ]
 
     return families.flatMap { family in
