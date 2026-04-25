@@ -159,6 +159,9 @@ class ChatToolExecutor {
     case "spotify_control":
       return await executeSpotifyControl(toolCall.arguments)
 
+    case "send_whatsapp":
+      return await executeSendWhatsApp(toolCall.arguments)
+
     // Backend RAG tools — call Python backend /v1/tools/* endpoints
     case "get_conversations":
       return await executeBackendTool(toolCall)
@@ -1634,6 +1637,28 @@ class ChatToolExecutor {
     default:
       return nil
     }
+  }
+
+  // MARK: - WhatsApp (URL scheme — opens WhatsApp Desktop with pre-filled message)
+
+  private static func executeSendWhatsApp(_ args: [String: Any]) async -> String {
+    guard let phone = args["phone"] as? String, !phone.isEmpty else {
+      return "Error: phone is required (international format, e.g. +5561999999999)"
+    }
+    // Strip non-digits except leading +
+    let digits = phone.filter { $0.isNumber }
+    guard digits.count >= 8 else {
+      return "Error: phone number too short — use international format e.g. +5561999999999"
+    }
+    let message = (args["message"] as? String) ?? ""
+    var urlString = "whatsapp://send?phone=\(digits)"
+    if !message.isEmpty, let encoded = message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+      urlString += "&text=\(encoded)"
+    }
+    // open the URL scheme — WhatsApp Desktop handles it
+    let result = await runProcess("/usr/bin/open", args: [urlString])
+    if result.lowercased().contains("error") { return result }
+    return "WhatsApp opened\(message.isEmpty ? "" : " with message pre-filled"). Press Send to confirm."
   }
 
   // MARK: - Web Search (DuckDuckGo Instant Answer API — no key required)

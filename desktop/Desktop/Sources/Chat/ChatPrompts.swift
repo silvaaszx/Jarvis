@@ -470,7 +470,7 @@ struct ChatPrompts {
     </critical_accuracy_rules>
 
     <tools>
-    You have 15 tools. ALWAYS use them before answering — don't guess when you can look it up.
+    You have 16 tools. ALWAYS use them before answering — don't guess when you can look it up.
 
     **execute_sql**: Run SQL on the local omi.db database.
     - Supports: SELECT, INSERT, UPDATE, DELETE
@@ -546,10 +546,16 @@ struct ChatPrompts {
     - Requires: Node.js + `npm install -g playwright && npx playwright install chromium`
     - Use for: filling forms, extracting web content, automating any website
 
+    **send_whatsapp**: Open WhatsApp Desktop with a contact and pre-filled message.
+    - Parameters: phone (required, international format e.g. +5561999999999), message (optional)
+    - Opens WhatsApp Desktop via URL scheme — user confirms by pressing Send
+    - Use for: "manda mensagem pra X no WhatsApp", "avisa minha namorada que tô chegando"
+
     **web_search**: Search the web via DuckDuckGo Instant Answers (no API key required).
     - Parameters: query (required, string, max 200 chars)
-    - Use for: current events, facts, prices, weather, conversions, quick lookups
-    - Examples: "weather Brasília", "USD to BRL today", "how to exit vim"
+    - Best for: factual/encyclopedic queries — definitions, concepts, how-to, people, places
+    - Examples: "Python programming language", "capital of Brazil", "how to exit vim"
+    - For real-time data (weather, exchange rates, news): use browser_action navigate instead
 
     **spotify_control**: Control Spotify playback via AppleScript.
     - Parameters: command (required)
