@@ -1509,22 +1509,21 @@ class ChatToolExecutor {
       return "Error: Node.js not found. Install with: brew install node"
     }
 
-    // Verify Playwright is installed
-    let playwrightCheck = "/opt/homebrew/lib/node_modules/@playwright/test"
-    let playwrightLocal = "\(NSHomeDirectory())/node_modules/playwright"
-    let hasPW = FileManager.default.fileExists(atPath: playwrightCheck)
-      || FileManager.default.fileExists(atPath: playwrightLocal)
-    guard hasPW else {
-      return "Error: Playwright not found. Install with: npm install -g playwright && npx playwright install chromium"
+    // Playwright lives in ~/jarvis-tools (installed via npm)
+    let jarvisTools = "\(NSHomeDirectory())/jarvis-tools"
+    let playwrightPath = "\(jarvisTools)/node_modules/playwright"
+    guard FileManager.default.fileExists(atPath: playwrightPath) else {
+      return "Error: Playwright not found. Run: cd ~/jarvis-tools && npm install playwright && npx playwright install chromium"
     }
 
-    let script = buildPlaywrightScript(action: action, args: args)
+    let script = buildPlaywrightScript(action: action, args: args, jarvisTools: jarvisTools)
     guard let script = script else {
       return "Error: unsupported action '\(action)'. Use: navigate | click | type | screenshot | get_text"
     }
 
-    // Write script to temp file and run
-    let tmpScript = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("jarvis_pw_\(UUID().uuidString).mjs")
+    // Write CommonJS script to ~/jarvis-tools so require('playwright') resolves correctly
+    let tmpScript = URL(fileURLWithPath: jarvisTools)
+      .appendingPathComponent("_jarvis_run_\(UUID().uuidString).js")
     do {
       try script.write(to: tmpScript, atomically: true, encoding: .utf8)
     } catch {
@@ -1532,85 +1531,99 @@ class ChatToolExecutor {
     }
     defer { try? FileManager.default.removeItem(at: tmpScript) }
 
-    return await runProcess(nodePath, args: [tmpScript.path], timeoutSeconds: 30)
+    return await runProcess(nodePath, args: [tmpScript.path], workingDirectory: jarvisTools, timeoutSeconds: 30)
   }
 
-  /// Build a Playwright ESM script for the given action
-  private static func buildPlaywrightScript(action: String, args: [String: Any]) -> String? {
-    let pwImport = "import { chromium } from 'playwright';"
-    let launchArgs = "headless: false, channel: 'chrome'"
+  /// Build a Playwright CommonJS script for the given action (runs from ~/jarvis-tools)
+  private static func buildPlaywrightScript(action: String, args: [String: Any], jarvisTools: String) -> String? {
+    // CommonJS require — resolves from jarvisTools/node_modules
+    let header = "const { chromium } = require('playwright');"
+    let launchArgs = "headless: false"
+
+    // Helper to wrap async body in an IIFE (CommonJS has no top-level await)
+    func iife(_ body: String) -> String {
+      """
+      \(header)
+      (async () => {
+        \(body)
+      })().catch(e => { console.error(e.message); process.exit(1); });
+      """
+    }
 
     switch action {
     case "navigate":
       guard let url = args["url"] as? String, url.hasPrefix("http") else { return nil }
       let escaped = url.replacingOccurrences(of: "'", with: "\\'")
-      return """
-      \(pwImport)
-      const b = await chromium.launch({ \(launchArgs) });
-      const p = await b.newPage();
-      await p.goto('\(escaped)', { waitUntil: 'domcontentloaded', timeout: 15000 });
-      const title = await p.title();
-      console.log('Navigated to: ' + title);
-      await b.close();
-      """
+      return iife("""
+        const b = await chromium.launch({ \(launchArgs) });
+        const p = await b.newPage();
+        await p.goto('\(escaped)', { waitUntil: 'domcontentloaded', timeout: 15000 });
+        const title = await p.title();
+        console.log('Navigated to: ' + title);
+        await b.close();
+        """)
 
     case "click":
       guard let selector = args["selector"] as? String else { return nil }
-      let escaped = selector.replacingOccurrences(of: "'", with: "\\'")
-      let urlPart = (args["url"] as? String).map { "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" } ?? ""
-      return """
-      \(pwImport)
-      const b = await chromium.launch({ \(launchArgs) });
-      const p = await b.newPage();
-      \(urlPart)
-      await p.click('\(escaped)', { timeout: 10000 });
-      console.log('Clicked: \(escaped)');
-      await b.close();
-      """
+      let escapedSel = selector.replacingOccurrences(of: "'", with: "\\'")
+      let urlPart = (args["url"] as? String).map {
+        "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });"
+      } ?? ""
+      return iife("""
+        const b = await chromium.launch({ \(launchArgs) });
+        const p = await b.newPage();
+        \(urlPart)
+        await p.click('\(escapedSel)', { timeout: 10000 });
+        console.log('Clicked: \(escapedSel)');
+        await b.close();
+        """)
 
     case "type":
       guard let selector = args["selector"] as? String,
             let text = args["text"] as? String else { return nil }
       let escapedSel = selector.replacingOccurrences(of: "'", with: "\\'")
       let escapedText = text.replacingOccurrences(of: "'", with: "\\'")
-      let urlPart = (args["url"] as? String).map { "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" } ?? ""
-      return """
-      \(pwImport)
-      const b = await chromium.launch({ \(launchArgs) });
-      const p = await b.newPage();
-      \(urlPart)
-      await p.fill('\(escapedSel)', '\(escapedText)');
-      console.log('Typed into: \(escapedSel)');
-      await b.close();
-      """
+      let urlPart = (args["url"] as? String).map {
+        "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });"
+      } ?? ""
+      return iife("""
+        const b = await chromium.launch({ \(launchArgs) });
+        const p = await b.newPage();
+        \(urlPart)
+        await p.fill('\(escapedSel)', '\(escapedText)');
+        console.log('Typed into: \(escapedSel)');
+        await b.close();
+        """)
 
     case "screenshot":
       let url = (args["url"] as? String) ?? ""
-      let urlPart = url.hasPrefix("http") ? "await p.goto('\(url.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" : ""
+      let urlPart = url.hasPrefix("http")
+        ? "await p.goto('\(url.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });"
+        : ""
       let outPath = "\(NSTemporaryDirectory())jarvis_browser_\(Int(Date().timeIntervalSince1970)).png"
-      return """
-      \(pwImport)
-      const b = await chromium.launch({ \(launchArgs) });
-      const p = await b.newPage();
-      \(urlPart)
-      await p.screenshot({ path: '\(outPath)', fullPage: false });
-      console.log('Screenshot saved: \(outPath)');
-      await b.close();
-      """
+      return iife("""
+        const b = await chromium.launch({ \(launchArgs) });
+        const p = await b.newPage();
+        \(urlPart)
+        await p.screenshot({ path: '\(outPath)', fullPage: false });
+        console.log('Screenshot saved: \(outPath)');
+        await b.close();
+        """)
 
     case "get_text":
       guard let selector = args["selector"] as? String else { return nil }
       let escapedSel = selector.replacingOccurrences(of: "'", with: "\\'")
-      let urlPart = (args["url"] as? String).map { "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" } ?? ""
-      return """
-      \(pwImport)
-      const b = await chromium.launch({ \(launchArgs) });
-      const p = await b.newPage();
-      \(urlPart)
-      const text = await p.textContent('\(escapedSel)');
-      console.log(text);
-      await b.close();
-      """
+      let urlPart = (args["url"] as? String).map {
+        "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });"
+      } ?? ""
+      return iife("""
+        const b = await chromium.launch({ \(launchArgs) });
+        const p = await b.newPage();
+        \(urlPart)
+        const text = await p.textContent('\(escapedSel)');
+        console.log(text);
+        await b.close();
+        """)
 
     default:
       return nil
@@ -1623,12 +1636,16 @@ class ChatToolExecutor {
   private static func runProcess(
     _ executable: String,
     args: [String],
+    workingDirectory: String? = nil,
     timeoutSeconds: Double = 10
   ) async -> String {
     await withCheckedContinuation { continuation in
       let process = Process()
       process.executableURL = URL(fileURLWithPath: executable)
       process.arguments = args
+      if let wd = workingDirectory {
+        process.currentDirectoryURL = URL(fileURLWithPath: wd)
+      }
 
       let stdout = Pipe()
       let stderr = Pipe()
