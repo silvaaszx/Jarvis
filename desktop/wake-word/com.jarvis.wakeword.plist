@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Jarvis Wake Word — launchd agent (auto-start on login)
+
+  Install:
+    cp com.jarvis.wakeword.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.jarvis.wakeword.plist
+
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.jarvis.wakeword.plist
+    rm ~/Library/LaunchAgents/com.jarvis.wakeword.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.jarvis.wakeword</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/matheussilva/Documents/Developer2026/Jarvis/Jarvis/desktop/wake-word/.venv/bin/python3</string>
+        <string>/Users/matheussilva/Documents/Developer2026/Jarvis/Jarvis/desktop/wake-word/jarvis_wake_word.py</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/jarvis-wake-word.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/jarvis-wake-word-error.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
