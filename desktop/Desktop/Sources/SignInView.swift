@@ -15,14 +15,12 @@ struct SignInView: View {
 
                 // Logo/Title
                 VStack(spacing: 16) {
-                    // Omi logo
-                    if let logoURL = Bundle.resourceBundle.url(forResource: "herologo", withExtension: "png"),
-                       let logoImage = NSImage(contentsOf: logoURL) {
-                        Image(nsImage: logoImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 64, height: 64)
-                    }
+                    // Jarvis logo
+                    Image(systemName: "j.circle.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 64, height: 64)
+                        .foregroundColor(OmiColors.purplePrimary)
 
                     Text("jarvis")
                         .scaledFont(size: 48, weight: .bold)

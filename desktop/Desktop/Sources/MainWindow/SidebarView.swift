@@ -84,7 +84,7 @@ struct SidebarView: View {
   @ObservedObject private var crispManager = CrispManager.shared
 
   // State for Get Omi Widget (shown when no device is paired, dismissible)
-  @AppStorage("showGetOmiWidget") private var showGetOmiWidget = true
+  @AppStorage("showGetOmiWidget") private var showGetOmiWidget = false
 
   // Tier gating (0 = show all, 1-6 = sequential tiers)
   @AppStorage("currentTierLevel") private var currentTierLevel = 0
@@ -433,21 +433,12 @@ struct SidebarView: View {
   // MARK: - Header Section (Logo + Collapse Button on same row)
   private var headerSection: some View {
     HStack(spacing: 12) {
-      // Omi logo icon - using the herologo from Resources
-      if let logoURL = Bundle.resourceBundle.url(forResource: "herologo", withExtension: "png"),
-        let logoImage = NSImage(contentsOf: logoURL)
-      {
-        Image(nsImage: logoImage)
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(width: iconWidth, height: iconWidth)
-      } else {
-        // Fallback SF Symbol
-        Image(systemName: "circle.fill")
-          .scaledFont(size: 17)
-          .foregroundColor(OmiColors.purplePrimary)
-          .frame(width: iconWidth)
-      }
+      // Jarvis logo
+      Image(systemName: "waveform.circle.fill")
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: iconWidth, height: iconWidth)
+        .foregroundColor(OmiColors.purplePrimary)
 
       if !isCollapsed {
         // Brand name
