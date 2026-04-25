@@ -96,6 +96,11 @@ final class APIKeyService: ObservableObject {
         googleCalendarApiKey
     }
 
+    var effectiveFishAudioKey: String? {
+        nonEmpty(UserDefaults.standard.string(forKey: "dev_fish_audio_api_key"))
+            ?? getenv("FISH_AUDIO_API_KEY").flatMap { String(validatingUTF8: $0) }
+    }
+
     /// Fetch keys from the backend. Call after Firebase auth is ready.
     func fetchKeys() async {
         loadError = nil

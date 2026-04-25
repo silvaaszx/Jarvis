@@ -9,6 +9,8 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
 
   nonisolated private static let defaultVoiceID = "IRHApOXLvnW57QJPQH2P"  // Jarvis
   nonisolated private static let defaultModelID = "eleven_turbo_v2_5"
+  static let devFishAudioReferenceIDDefaultsKey = "dev_fish_audio_reference_id"
+  nonisolated private static let defaultFishAudioReferenceID = ""  // set via UserDefaults or FISH_AUDIO_REFERENCE_ID env var
   // First chunk stays small so playback starts fast.
   nonisolated private static let firstChunkMinimumLength = 40
   nonisolated private static let firstChunkPreferredLength = 120
@@ -33,6 +35,16 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
     "Hold on.",
     "One sec.",
     "Working on it.",
+  ]
+  nonisolated private static let fillerPhrasesPT: [String] = [
+    "Deixa eu ver.",
+    "Um momento.",
+    "Verificando.",
+    "Já vejo isso.",
+    "Aguarde.",
+    "Um segundo.",
+    "Processando.",
+    "Vou verificar.",
   ]
 
   private var playbackTask: Task<Void, Never>?
@@ -67,20 +79,38 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
     if currentMode == nil {
       currentMode = resolvePlaybackMode()
     }
-    guard let mode = currentMode, case .elevenLabs(let voiceID) = mode else { return }
+    guard let mode = currentMode else { return }
+    if case .systemFallback = mode { return }
 
     hasStartedRealPlayback = false
-    let phrase = Self.fillerPhrases.randomElement()!
-    fillerTask = Task { [weak self] in
-      do {
-        let audioData = try await Self.synthesizeSpeech(
-          text: phrase, voiceID: voiceID)
-        try Task.checkCancellation()
-        await MainActor.run {
-          guard let self, !self.hasStartedRealPlayback else { return }
-          self.startPlayback(audioData)
-        }
-      } catch {}
+
+    switch mode {
+    case .elevenLabs(let voiceID):
+      let phrase = Self.fillerPhrases.randomElement()!
+      fillerTask = Task { [weak self] in
+        do {
+          let audioData = try await Self.synthesizeSpeech(text: phrase, voiceID: voiceID)
+          try Task.checkCancellation()
+          await MainActor.run {
+            guard let self, !self.hasStartedRealPlayback else { return }
+            self.startPlayback(audioData)
+          }
+        } catch {}
+      }
+    case .fishAudio(let referenceID):
+      let phrase = Self.fillerPhrasesPT.randomElement()!
+      fillerTask = Task { [weak self] in
+        do {
+          let audioData = try await Self.synthesizeSpeechFishAudio(text: phrase, referenceID: referenceID)
+          try Task.checkCancellation()
+          await MainActor.run {
+            guard let self, !self.hasStartedRealPlayback else { return }
+            self.startPlayback(audioData)
+          }
+        } catch {}
+      }
+    case .systemFallback:
+      break
     }
   }
 
@@ -150,6 +180,14 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
     guard getenv("OMI_API_URL") != nil else {
       return .systemFallback
     }
+    // Use Fish Audio whenever key + reference ID are configured (Jarvis default TTS)
+    let fishKey = getenv("FISH_AUDIO_API_KEY").flatMap { String(validatingUTF8: $0) } ?? ""
+    let fishRefID = UserDefaults.standard.string(forKey: Self.devFishAudioReferenceIDDefaultsKey)
+      ?? getenv("FISH_AUDIO_REFERENCE_ID").flatMap { String(validatingUTF8: $0) }
+      ?? Self.defaultFishAudioReferenceID
+    if !fishKey.isEmpty && !fishRefID.isEmpty {
+      return .fishAudio(referenceID: fishRefID)
+    }
     let voiceID = ShortcutSettings.shared.selectedVoiceID
     let resolvedVoiceID = voiceID.isEmpty ? Self.defaultVoiceID : voiceID
     return .elevenLabs(voiceID: resolvedVoiceID)
@@ -173,7 +211,7 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
     switch mode {
     case .systemFallback:
       enqueueSystemSpeech(text)
-    case .elevenLabs:
+    case .elevenLabs, .fishAudio:
       synthesisQueue.append(text)
       startSynthesisIfNeeded(mode: mode)
     }
@@ -181,48 +219,87 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
 
   private func startSynthesisIfNeeded(mode: PlaybackMode) {
     guard !isSynthesizing else { return }
-    guard case .elevenLabs(let voiceID) = mode else { return }
     guard !synthesisQueue.isEmpty else { return }
 
-    let text = synthesisQueue.removeFirst()
-    isSynthesizing = true
-    playbackTask?.cancel()
-    playbackTask = Task { [weak self] in
-      do {
-        let audioData = try await Self.synthesizeSpeech(
-          text: text, voiceID: voiceID)
-        try Task.checkCancellation()
-        await MainActor.run {
-          guard let self else { return }
-          self.isSynthesizing = false
-          self.audioQueue.append(audioData)
-          self.startPlaybackIfNeeded()
-          self.startSynthesisIfNeeded(mode: mode)
-        }
-      } catch is CancellationError {
-        await MainActor.run {
-          guard let self else { return }
-          self.isSynthesizing = false
-          self.startSynthesisIfNeeded(mode: mode)
-        }
-      } catch {
-        if Self.isCancellation(error) {
+    switch mode {
+    case .systemFallback:
+      return
+    case .elevenLabs(let voiceID):
+      let text = synthesisQueue.removeFirst()
+      isSynthesizing = true
+      playbackTask?.cancel()
+      playbackTask = Task { [weak self] in
+        do {
+          let audioData = try await Self.synthesizeSpeech(text: text, voiceID: voiceID)
+          try Task.checkCancellation()
+          await MainActor.run {
+            guard let self else { return }
+            self.isSynthesizing = false
+            self.audioQueue.append(audioData)
+            self.startPlaybackIfNeeded()
+            self.startSynthesisIfNeeded(mode: mode)
+          }
+        } catch is CancellationError {
           await MainActor.run {
             guard let self else { return }
             self.isSynthesizing = false
             self.startSynthesisIfNeeded(mode: mode)
           }
-          return
+        } catch {
+          if Self.isCancellation(error) {
+            await MainActor.run {
+              guard let self else { return }
+              self.isSynthesizing = false
+              self.startSynthesisIfNeeded(mode: mode)
+            }
+            return
+          }
+          await MainActor.run {
+            guard let self else { return }
+            self.isSynthesizing = false
+            log("FloatingBarVoicePlaybackService: ElevenLabs chunk synthesis failed, falling back to system voice: \(error.localizedDescription)")
+            self.enqueueSystemSpeech(text)
+            self.startSynthesisIfNeeded(mode: mode)
+          }
         }
-
-        await MainActor.run {
-          guard let self else { return }
-          self.isSynthesizing = false
-          log(
-            "FloatingBarVoicePlaybackService: ElevenLabs chunk synthesis failed, falling back to system voice: \(error.localizedDescription)"
-          )
-          self.enqueueSystemSpeech(text)
-          self.startSynthesisIfNeeded(mode: mode)
+      }
+    case .fishAudio(let referenceID):
+      let text = synthesisQueue.removeFirst()
+      isSynthesizing = true
+      playbackTask?.cancel()
+      playbackTask = Task { [weak self] in
+        do {
+          let audioData = try await Self.synthesizeSpeechFishAudio(text: text, referenceID: referenceID)
+          try Task.checkCancellation()
+          await MainActor.run {
+            guard let self else { return }
+            self.isSynthesizing = false
+            self.audioQueue.append(audioData)
+            self.startPlaybackIfNeeded()
+            self.startSynthesisIfNeeded(mode: mode)
+          }
+        } catch is CancellationError {
+          await MainActor.run {
+            guard let self else { return }
+            self.isSynthesizing = false
+            self.startSynthesisIfNeeded(mode: mode)
+          }
+        } catch {
+          if Self.isCancellation(error) {
+            await MainActor.run {
+              guard let self else { return }
+              self.isSynthesizing = false
+              self.startSynthesisIfNeeded(mode: mode)
+            }
+            return
+          }
+          await MainActor.run {
+            guard let self else { return }
+            self.isSynthesizing = false
+            log("FloatingBarVoicePlaybackService: Fish Audio chunk synthesis failed, falling back to system voice: \(error.localizedDescription)")
+            self.enqueueSystemSpeech(text)
+            self.startSynthesisIfNeeded(mode: mode)
+          }
         }
       }
     }
@@ -352,6 +429,56 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
     return AVSpeechSynthesisVoice(language: "en-US")
   }
 
+  /// Synthesize speech via Fish Audio API (used for Portuguese / PT-BR).
+  private nonisolated static func synthesizeSpeechFishAudio(text: String, referenceID: String)
+    async throws -> Data
+  {
+    let apiKey = UserDefaults.standard.string(forKey: "dev_fish_audio_api_key")
+      ?? getenv("FISH_AUDIO_API_KEY").flatMap { String(validatingUTF8: $0) }
+      ?? ""
+    guard !apiKey.isEmpty else {
+      throw FloatingBarVoicePlaybackError.requestFailed(statusCode: 0, body: "Fish Audio API key not configured")
+    }
+    let url = URL(string: "https://api.fish.audio/v1/tts")!
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/msgpack", forHTTPHeaderField: "Content-Type")
+    request.httpBody = encodeMsgpackTTSRequest(text: text, referenceID: referenceID)
+    let (data, response) = try await URLSession.shared.data(for: request)
+    guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+      let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+      let body = String(data: data, encoding: .utf8) ?? ""
+      throw FloatingBarVoicePlaybackError.requestFailed(statusCode: statusCode, body: body)
+    }
+    return data
+  }
+
+  /// Encode a Fish Audio TTS request as MessagePack.
+  /// Produces: { "text": text, "reference_id": referenceID, "format": "mp3", "streaming": false }
+  private nonisolated static func encodeMsgpackTTSRequest(text: String, referenceID: String) -> Data {
+    var buf = Data()
+    buf.append(0x84)  // fixmap, 4 fields
+    appendMsgpackStr(&buf, "text");           appendMsgpackStr(&buf, text)
+    appendMsgpackStr(&buf, "reference_id");   appendMsgpackStr(&buf, referenceID)
+    appendMsgpackStr(&buf, "format");         appendMsgpackStr(&buf, "mp3")
+    appendMsgpackStr(&buf, "streaming");      buf.append(0xc2)  // false
+    return buf
+  }
+
+  private nonisolated static func appendMsgpackStr(_ buf: inout Data, _ str: String) {
+    let bytes = Array(str.utf8)
+    let count = bytes.count
+    if count <= 31 {
+      buf.append(UInt8(0xa0 | count))
+    } else if count <= 255 {
+      buf.append(0xd9); buf.append(UInt8(count))
+    } else {
+      buf.append(0xda); buf.append(UInt8(count >> 8)); buf.append(UInt8(count & 0xff))
+    }
+    buf.append(contentsOf: bytes)
+  }
+
   /// Synthesize speech via the backend TTS proxy (ElevenLabs key stays server-side).
   private nonisolated static func synthesizeSpeech(text: String, voiceID: String)
     async throws -> Data
@@ -475,6 +602,7 @@ final class FloatingBarVoicePlaybackService: NSObject, AVAudioPlayerDelegate {
 
 private enum PlaybackMode {
   case elevenLabs(voiceID: String)
+  case fishAudio(referenceID: String)
   case systemFallback
 }
 
