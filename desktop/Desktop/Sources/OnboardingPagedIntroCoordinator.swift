@@ -338,6 +338,10 @@ final class OnboardingPagedIntroCoordinator: ObservableObject {
     await setLanguage(code: "en", label: "English")
   }
 
+  func selectPortuguese() async {
+    await setLanguage(code: "pt", label: "Português")
+  }
+
   func setCustomLanguage() async {
     let trimmed = customLanguage.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {

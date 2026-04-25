@@ -36,8 +36,21 @@ struct OnboardingLanguageStepView: View {
           }
 
           OnboardingSelectableChip(
+            title: "Português",
+            isSelected: coordinator.selectedLanguageCode == "pt"
+          ) {
+            showingCustomLanguage = false
+            Task {
+              await coordinator.selectPortuguese()
+              if coordinator.lastActionError == nil {
+                onContinue()
+              }
+            }
+          }
+
+          OnboardingSelectableChip(
             title: "Other",
-            isSelected: showingCustomLanguage && coordinator.selectedLanguageCode != "en"
+            isSelected: showingCustomLanguage && coordinator.selectedLanguageCode != "en" && coordinator.selectedLanguageCode != "pt"
           ) {
             showingCustomLanguage = true
           }
