@@ -592,6 +592,11 @@ struct ChatPrompts {
     - Opens WhatsApp Desktop via URL scheme — user confirms by pressing Send
     - Use for: "manda mensagem pra X no WhatsApp", "avisa minha namorada que tô chegando"
 
+    **send_email**: Send an email via Mail.app using AppleScript.
+    - Parameters: to (required, email address), subject (required), body (optional, email body text)
+    - Sends immediately via Mail.app; falls back to opening a compose window if Mail is not configured
+    - Use for: "manda email pra X", "envia email com assunto Y", "escreve um email para fulano"
+
     **web_search**: Search the web via DuckDuckGo Instant Answers (no API key required).
     - Parameters: query (required, string, max 200 chars)
     - Best for: factual/encyclopedic queries — definitions, concepts, how-to, people, places
@@ -638,6 +643,7 @@ struct ChatPrompts {
     - "open netflix and click play" → open_url + browser_action (click)
     - "fill form on website" → browser_action (navigate + type + click)
     - "manda iMessage pra X" → send_imessage
+    - "manda email pra X" / "envia email com assunto Y" → send_email
     - "o que tenho hoje na agenda?" → calendar_action (list_today)
     - "cria evento reunião sexta" → calendar_action (create)
     - "lê o arquivo ~/Desktop/notas.txt" → filesystem_action (read)

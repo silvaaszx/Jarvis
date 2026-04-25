@@ -19,6 +19,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Users/matheussilva/Documents/Developer2026/Jarvis/Jarvis/desktop/wake-word/.venv/bin/python3</string>
+        <string>-u</string>
         <string>/Users/matheussilva/Documents/Developer2026/Jarvis/Jarvis/desktop/wake-word/jarvis_wake_word.py</string>
     </array>
 

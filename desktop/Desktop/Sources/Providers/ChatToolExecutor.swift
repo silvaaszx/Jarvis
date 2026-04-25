@@ -174,6 +174,9 @@ class ChatToolExecutor {
     case "run_shortcut":
       return await executeRunShortcut(toolCall.arguments)
 
+    case "send_email":
+      return await executeSendEmail(toolCall.arguments)
+
     // Backend RAG tools — call Python backend /v1/tools/* endpoints
     case "get_conversations":
       return await executeBackendTool(toolCall)
@@ -1680,6 +1683,40 @@ class ChatToolExecutor {
       return await runProcess("/usr/bin/open", args: ["sms://\(digits)&body=\(encoded)"])
     }
     return "iMessage sent to \(recipient)"
+  }
+
+  // MARK: - Email (AppleScript via Mail.app)
+
+  private static func executeSendEmail(_ args: [String: Any]) async -> String {
+    guard let to = args["to"] as? String, !to.isEmpty else {
+      return "Error: 'to' is required (email address)"
+    }
+    guard let subject = args["subject"] as? String, !subject.isEmpty else {
+      return "Error: 'subject' is required"
+    }
+    let body = (args["body"] as? String) ?? ""
+    let escapedTo = to.replacingOccurrences(of: "\"", with: "\\\"")
+    let escapedSubject = subject.replacingOccurrences(of: "\"", with: "\\\"")
+    let escapedBody = body.replacingOccurrences(of: "\"", with: "\\\"").replacingOccurrences(of: "\n", with: "\\n")
+    let script = """
+      tell application "Mail"
+        set newMsg to make new outgoing message with properties {subject:"\(escapedSubject)", content:"\(escapedBody)", visible:true}
+        tell newMsg
+          make new to recipient with properties {address:"\(escapedTo)"}
+        end tell
+        send newMsg
+        activate
+      end tell
+      """
+    let result = await runProcess("/usr/bin/osascript", args: ["-e", script])
+    if result.lowercased().contains("error") {
+      // Fallback: open mailto link so user can send manually
+      let encoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+      let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+      _ = await runProcess("/usr/bin/open", args: ["mailto:\(to)?subject=\(subjectEncoded)&body=\(encoded)"])
+      return "Opened Mail.app compose window to \(to) — press Send to confirm."
+    }
+    return "Email sent to \(to) — subject: \"\(subject)\""
   }
 
   // MARK: - Calendar (AppleScript via Calendar.app)
