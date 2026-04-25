@@ -153,6 +153,12 @@ class ChatToolExecutor {
     case "browser_action":
       return await executeBrowserAction(toolCall.arguments)
 
+    case "web_search":
+      return await executeWebSearch(toolCall.arguments)
+
+    case "spotify_control":
+      return await executeSpotifyControl(toolCall.arguments)
+
     // Backend RAG tools — call Python backend /v1/tools/* endpoints
     case "get_conversations":
       return await executeBackendTool(toolCall)
@@ -1627,6 +1633,120 @@ class ChatToolExecutor {
 
     default:
       return nil
+    }
+  }
+
+  // MARK: - Web Search (DuckDuckGo Instant Answer API — no key required)
+
+  private static func executeWebSearch(_ args: [String: Any]) async -> String {
+    guard let query = args["query"] as? String, !query.isEmpty else {
+      return "Error: query is required"
+    }
+    guard query.count <= 200 else { return "Error: query too long (max 200 chars)" }
+
+    var components = URLComponents(string: "https://api.duckduckgo.com/")!
+    components.queryItems = [
+      URLQueryItem(name: "q", value: query),
+      URLQueryItem(name: "format", value: "json"),
+      URLQueryItem(name: "no_html", value: "1"),
+      URLQueryItem(name: "skip_disambig", value: "1"),
+    ]
+    guard let url = components.url else { return "Error: could not build search URL" }
+
+    do {
+      let (data, _) = try await URLSession.shared.data(from: url)
+      guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        return "Error: failed to parse search response"
+      }
+
+      var lines: [String] = ["Search results for: \(query)\n"]
+
+      // Abstract (direct answer)
+      if let abstract = json["AbstractText"] as? String, !abstract.isEmpty {
+        lines.append("Answer: \(abstract)")
+        if let src = json["AbstractSource"] as? String, !src.isEmpty {
+          lines.append("Source: \(src)")
+        }
+        lines.append("")
+      }
+
+      // Definition
+      if let def = json["Definition"] as? String, !def.isEmpty {
+        lines.append("Definition: \(def)")
+        lines.append("")
+      }
+
+      // Related topics
+      if let topics = json["RelatedTopics"] as? [[String: Any]] {
+        let results = topics.compactMap { t -> String? in
+          guard let text = t["Text"] as? String, !text.isEmpty else { return nil }
+          let firstUrl = (t["FirstURL"] as? String) ?? ""
+          return "• \(text)\n  \(firstUrl)"
+        }.prefix(5)
+        if !results.isEmpty {
+          lines.append("Related:")
+          lines.append(contentsOf: results)
+        }
+      }
+
+      // Answer (instant calculator, conversions, etc.)
+      if let answer = json["Answer"] as? String, !answer.isEmpty {
+        lines.append("Instant Answer: \(answer)")
+      }
+
+      let result = lines.joined(separator: "\n")
+      return result.count > 20 ? result : "No results found for: \(query)"
+    } catch {
+      return "Search error: \(error.localizedDescription)"
+    }
+  }
+
+  // MARK: - Spotify Control (AppleScript shortcuts)
+
+  private static func executeSpotifyControl(_ args: [String: Any]) async -> String {
+    guard let command = args["command"] as? String else {
+      return "Error: command is required (play | pause | next | previous | play_track | get_current | set_volume)"
+    }
+
+    switch command {
+    case "play":
+      return await runProcess("/usr/bin/osascript", args: ["-e", "tell application \"Spotify\" to play"])
+    case "pause":
+      return await runProcess("/usr/bin/osascript", args: ["-e", "tell application \"Spotify\" to pause"])
+    case "next":
+      return await runProcess("/usr/bin/osascript", args: ["-e", "tell application \"Spotify\" to next track"])
+    case "previous":
+      return await runProcess("/usr/bin/osascript", args: ["-e", "tell application \"Spotify\" to previous track"])
+    case "get_current":
+      let script = """
+        tell application "Spotify"
+          set t to name of current track
+          set a to artist of current track
+          set s to player state as string
+          return s & " — " & a & " — " & t
+        end tell
+        """
+      return await runProcess("/usr/bin/osascript", args: ["-e", script])
+    case "play_track":
+      guard let track = args["track"] as? String, !track.isEmpty else {
+        return "Error: track name required for play_track"
+      }
+      let escaped = track.replacingOccurrences(of: "\"", with: "\\\"")
+      let script = """
+        tell application "Spotify"
+          set searchUrl to "spotify:search:" & "\(escaped)"
+          play track searchUrl
+        end tell
+        """
+      return await runProcess("/usr/bin/osascript", args: ["-e", script])
+    case "set_volume":
+      guard let volume = args["volume"] as? Int, (0...100).contains(volume) else {
+        return "Error: volume must be an integer 0–100"
+      }
+      let script = "tell application \"Spotify\" to set sound volume to \(volume)"
+      return await runProcess("/usr/bin/osascript", args: ["-e", script])
+    default:
+      return "Error: unknown command '\(command)'. Use: play | pause | next | previous | play_track | get_current | set_volume"
     }
   }
 

@@ -470,7 +470,7 @@ struct ChatPrompts {
     </critical_accuracy_rules>
 
     <tools>
-    You have 13 tools. ALWAYS use them before answering — don't guess when you can look it up.
+    You have 15 tools. ALWAYS use them before answering — don't guess when you can look it up.
 
     **execute_sql**: Run SQL on the local omi.db database.
     - Supports: SELECT, INSERT, UPDATE, DELETE
@@ -546,6 +546,22 @@ struct ChatPrompts {
     - Requires: Node.js + `npm install -g playwright && npx playwright install chromium`
     - Use for: filling forms, extracting web content, automating any website
 
+    **web_search**: Search the web via DuckDuckGo Instant Answers (no API key required).
+    - Parameters: query (required, string, max 200 chars)
+    - Use for: current events, facts, prices, weather, conversions, quick lookups
+    - Examples: "weather Brasília", "USD to BRL today", "how to exit vim"
+
+    **spotify_control**: Control Spotify playback via AppleScript.
+    - Parameters: command (required)
+    - Commands:
+      - `play` — resume playback
+      - `pause` — pause playback
+      - `next` — skip to next track
+      - `previous` — go to previous track
+      - `get_current` — returns "state — artist — track name"
+      - `play_track` + track (string) — search and play a track
+      - `set_volume` + volume (int 0–100) — set volume
+
     **CRITICAL — When to use tools proactively:**
     The <user_facts> section above only contains a SAMPLE of {user_name}'s memories. The full set is in the database.
     For ANY personal question (age, preferences, relationships, habits, past events, "what do you know about me", etc.):
@@ -566,6 +582,14 @@ struct ChatPrompts {
     - "delete that task" → execute_sql to find backendId, then delete_task
     - "show my conversations" → execute_sql (SELECT FROM transcription_sessions)
     - "what did I talk about with John?" → execute_sql (search transcription_segments)
+    - "search the web for X" / "what's the weather?" / "USD to BRL?" → web_search
+    - "play next song" / "pause music" / "what's playing?" → spotify_control
+    - "play trap music" / "put on lofi" → spotify_control (play_track)
+    - "open youtube.com" / "go to github" → open_url
+    - "open Spotify / Messages / Mail" → open_app
+    - "send iMessage to X" → run_applescript (Messages AppleScript)
+    - "open netflix and click play" → open_url + browser_action (click)
+    - "fill form on website" → browser_action (navigate + type + click)
 
     {database_schema}
 
