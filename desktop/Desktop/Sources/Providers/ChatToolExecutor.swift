@@ -134,6 +134,25 @@ class ChatToolExecutor {
     case "capture_screen":
       return await executeCaptureScreen()
 
+    // Automation tools — desktop (AppleScript/cliclick) + browser (Playwright)
+    case "run_applescript":
+      return await executeRunAppleScript(toolCall.arguments)
+
+    case "open_app":
+      return await executeOpenApp(toolCall.arguments)
+
+    case "open_url":
+      return await executeOpenURL(toolCall.arguments)
+
+    case "click_desktop":
+      return await executeClickDesktop(toolCall.arguments)
+
+    case "type_desktop":
+      return await executeTypeDesktop(toolCall.arguments)
+
+    case "browser_action":
+      return await executeBrowserAction(toolCall.arguments)
+
     // Backend RAG tools — call Python backend /v1/tools/* endpoints
     case "get_conversations":
       return await executeBackendTool(toolCall)
@@ -1399,6 +1418,255 @@ class ChatToolExecutor {
     } catch {
       log("Backend tool error (\(toolCall.name)): \(error)")
       return "Error calling backend: \(error.localizedDescription)"
+    }
+  }
+
+  // MARK: - Automation: Desktop (AppleScript + cliclick)
+
+  /// Run AppleScript via osascript
+  private static func executeRunAppleScript(_ args: [String: Any]) async -> String {
+    guard let script = args["script"] as? String, !script.isEmpty else {
+      return "Error: script is required"
+    }
+    // Block dangerous patterns
+    let blocked = ["do shell script", "delete", "move to trash"]
+    let lower = script.lowercased()
+    for pattern in blocked {
+      if lower.contains(pattern) {
+        return "Error: script contains blocked operation '\(pattern)'"
+      }
+    }
+    return await runProcess("/usr/bin/osascript", args: ["-e", script])
+  }
+
+  /// Open a macOS application by name
+  private static func executeOpenApp(_ args: [String: Any]) async -> String {
+    guard let appName = args["name"] as? String, !appName.isEmpty else {
+      return "Error: name is required"
+    }
+    // Sanitize — only allow alphanumeric, spaces, dots, dashes
+    let safe = appName.filter { $0.isLetter || $0.isNumber || $0 == " " || $0 == "." || $0 == "-" }
+    guard safe == appName else {
+      return "Error: app name contains invalid characters"
+    }
+    return await runProcess("/usr/bin/open", args: ["-a", appName])
+  }
+
+  /// Open a URL in the default browser
+  private static func executeOpenURL(_ args: [String: Any]) async -> String {
+    guard let urlString = args["url"] as? String, !urlString.isEmpty else {
+      return "Error: url is required"
+    }
+    guard urlString.hasPrefix("https://") || urlString.hasPrefix("http://") else {
+      return "Error: only http/https URLs are allowed"
+    }
+    return await runProcess("/usr/bin/open", args: [urlString])
+  }
+
+  /// Click at screen coordinates using cliclick
+  /// Requires: brew install cliclick
+  private static func executeClickDesktop(_ args: [String: Any]) async -> String {
+    guard let x = args["x"] as? Int, let y = args["y"] as? Int else {
+      return "Error: x and y (integer screen coordinates) are required"
+    }
+    guard x >= 0, y >= 0, x <= 7680, y <= 4320 else {
+      return "Error: coordinates out of valid range"
+    }
+    let cliclick = "/opt/homebrew/bin/cliclick"
+    guard FileManager.default.fileExists(atPath: cliclick) else {
+      return "Error: cliclick not found at \(cliclick). Install with: brew install cliclick"
+    }
+    return await runProcess(cliclick, args: ["c:\(x),\(y)"])
+  }
+
+  /// Type text using cliclick
+  private static func executeTypeDesktop(_ args: [String: Any]) async -> String {
+    guard let text = args["text"] as? String, !text.isEmpty else {
+      return "Error: text is required"
+    }
+    guard text.count <= 500 else {
+      return "Error: text too long (max 500 chars)"
+    }
+    let cliclick = "/opt/homebrew/bin/cliclick"
+    guard FileManager.default.fileExists(atPath: cliclick) else {
+      return "Error: cliclick not found at \(cliclick). Install with: brew install cliclick"
+    }
+    return await runProcess(cliclick, args: ["t:\(text)"])
+  }
+
+  // MARK: - Automation: Browser (Playwright)
+
+  /// Run a browser action via a Playwright Node.js one-liner
+  /// Supported actions: navigate, click, type, screenshot, get_text
+  private static func executeBrowserAction(_ args: [String: Any]) async -> String {
+    guard let action = args["action"] as? String else {
+      return "Error: action is required (navigate | click | type | screenshot | get_text)"
+    }
+
+    // Find node
+    let nodePaths = ["/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node"]
+    guard let nodePath = nodePaths.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
+      return "Error: Node.js not found. Install with: brew install node"
+    }
+
+    // Verify Playwright is installed
+    let playwrightCheck = "/opt/homebrew/lib/node_modules/@playwright/test"
+    let playwrightLocal = "\(NSHomeDirectory())/node_modules/playwright"
+    let hasPW = FileManager.default.fileExists(atPath: playwrightCheck)
+      || FileManager.default.fileExists(atPath: playwrightLocal)
+    guard hasPW else {
+      return "Error: Playwright not found. Install with: npm install -g playwright && npx playwright install chromium"
+    }
+
+    let script = buildPlaywrightScript(action: action, args: args)
+    guard let script = script else {
+      return "Error: unsupported action '\(action)'. Use: navigate | click | type | screenshot | get_text"
+    }
+
+    // Write script to temp file and run
+    let tmpScript = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("jarvis_pw_\(UUID().uuidString).mjs")
+    do {
+      try script.write(to: tmpScript, atomically: true, encoding: .utf8)
+    } catch {
+      return "Error writing temp script: \(error.localizedDescription)"
+    }
+    defer { try? FileManager.default.removeItem(at: tmpScript) }
+
+    return await runProcess(nodePath, args: [tmpScript.path], timeoutSeconds: 30)
+  }
+
+  /// Build a Playwright ESM script for the given action
+  private static func buildPlaywrightScript(action: String, args: [String: Any]) -> String? {
+    let pwImport = "import { chromium } from 'playwright';"
+    let launchArgs = "headless: false, channel: 'chrome'"
+
+    switch action {
+    case "navigate":
+      guard let url = args["url"] as? String, url.hasPrefix("http") else { return nil }
+      let escaped = url.replacingOccurrences(of: "'", with: "\\'")
+      return """
+      \(pwImport)
+      const b = await chromium.launch({ \(launchArgs) });
+      const p = await b.newPage();
+      await p.goto('\(escaped)', { waitUntil: 'domcontentloaded', timeout: 15000 });
+      const title = await p.title();
+      console.log('Navigated to: ' + title);
+      await b.close();
+      """
+
+    case "click":
+      guard let selector = args["selector"] as? String else { return nil }
+      let escaped = selector.replacingOccurrences(of: "'", with: "\\'")
+      let urlPart = (args["url"] as? String).map { "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" } ?? ""
+      return """
+      \(pwImport)
+      const b = await chromium.launch({ \(launchArgs) });
+      const p = await b.newPage();
+      \(urlPart)
+      await p.click('\(escaped)', { timeout: 10000 });
+      console.log('Clicked: \(escaped)');
+      await b.close();
+      """
+
+    case "type":
+      guard let selector = args["selector"] as? String,
+            let text = args["text"] as? String else { return nil }
+      let escapedSel = selector.replacingOccurrences(of: "'", with: "\\'")
+      let escapedText = text.replacingOccurrences(of: "'", with: "\\'")
+      let urlPart = (args["url"] as? String).map { "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" } ?? ""
+      return """
+      \(pwImport)
+      const b = await chromium.launch({ \(launchArgs) });
+      const p = await b.newPage();
+      \(urlPart)
+      await p.fill('\(escapedSel)', '\(escapedText)');
+      console.log('Typed into: \(escapedSel)');
+      await b.close();
+      """
+
+    case "screenshot":
+      let url = (args["url"] as? String) ?? ""
+      let urlPart = url.hasPrefix("http") ? "await p.goto('\(url.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" : ""
+      let outPath = "\(NSTemporaryDirectory())jarvis_browser_\(Int(Date().timeIntervalSince1970)).png"
+      return """
+      \(pwImport)
+      const b = await chromium.launch({ \(launchArgs) });
+      const p = await b.newPage();
+      \(urlPart)
+      await p.screenshot({ path: '\(outPath)', fullPage: false });
+      console.log('Screenshot saved: \(outPath)');
+      await b.close();
+      """
+
+    case "get_text":
+      guard let selector = args["selector"] as? String else { return nil }
+      let escapedSel = selector.replacingOccurrences(of: "'", with: "\\'")
+      let urlPart = (args["url"] as? String).map { "await p.goto('\($0.replacingOccurrences(of: "'", with: "\\'"))', { waitUntil: 'domcontentloaded' });" } ?? ""
+      return """
+      \(pwImport)
+      const b = await chromium.launch({ \(launchArgs) });
+      const p = await b.newPage();
+      \(urlPart)
+      const text = await p.textContent('\(escapedSel)');
+      console.log(text);
+      await b.close();
+      """
+
+    default:
+      return nil
+    }
+  }
+
+  // MARK: - Process Runner
+
+  /// Run an external process and return its stdout (trimmed), or stderr on failure
+  private static func runProcess(
+    _ executable: String,
+    args: [String],
+    timeoutSeconds: Double = 10
+  ) async -> String {
+    await withCheckedContinuation { continuation in
+      let process = Process()
+      process.executableURL = URL(fileURLWithPath: executable)
+      process.arguments = args
+
+      let stdout = Pipe()
+      let stderr = Pipe()
+      process.standardOutput = stdout
+      process.standardError = stderr
+
+      var timedOut = false
+      let timer = DispatchWorkItem {
+        timedOut = true
+        process.terminate()
+      }
+      DispatchQueue.global().asyncAfter(deadline: .now() + timeoutSeconds, execute: timer)
+
+      do {
+        try process.run()
+        process.waitUntilExit()
+        timer.cancel()
+      } catch {
+        continuation.resume(returning: "Error launching process: \(error.localizedDescription)")
+        return
+      }
+
+      if timedOut {
+        continuation.resume(returning: "Error: process timed out after \(Int(timeoutSeconds))s")
+        return
+      }
+
+      let outData = stdout.fileHandleForReading.readDataToEndOfFile()
+      let errData = stderr.fileHandleForReading.readDataToEndOfFile()
+      let outStr = String(data: outData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      let errStr = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+      if process.terminationStatus != 0 {
+        let detail = errStr.isEmpty ? outStr : errStr
+        continuation.resume(returning: "Error (exit \(process.terminationStatus)): \(detail)")
+      } else {
+        continuation.resume(returning: outStr.isEmpty ? "OK" : outStr)
+      }
     }
   }
 }

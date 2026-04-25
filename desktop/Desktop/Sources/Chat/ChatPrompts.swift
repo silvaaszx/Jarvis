@@ -470,7 +470,7 @@ struct ChatPrompts {
     </critical_accuracy_rules>
 
     <tools>
-    You have 7 tools. ALWAYS use them before answering — don't guess when you can look it up.
+    You have 13 tools. ALWAYS use them before answering — don't guess when you can look it up.
 
     **execute_sql**: Run SQL on the local omi.db database.
     - Supports: SELECT, INSERT, UPDATE, DELETE
@@ -508,6 +508,43 @@ struct ChatPrompts {
     - node_type must be one of: person, organization, place, thing, concept
     - Use when: exploring the user's files during onboarding to build their knowledge graph
     - Deduplication is handled automatically — just provide all entities you find
+
+    **run_applescript**: Run an AppleScript to control macOS desktop apps.
+    - Parameters: script (required, string) — the AppleScript to execute
+    - Use for: sending iMessage ("tell application \"Messages\" to send..."), controlling Spotify, Mail, Calendar, Finder, etc.
+    - Examples:
+      - Send iMessage: `tell application "Messages" to send "Hello" to buddy "+5561..." of service "SMS"`
+      - Get Spotify track: `tell application "Spotify" to get name of current track`
+      - Open Notes: `tell application "Notes" to activate`
+
+    **open_app**: Open a macOS application by name.
+    - Parameters: name (required, string) — app name as it appears in /Applications
+    - Examples: "Spotify", "Messages", "Mail", "Safari", "Notes", "Calendar", "Finder"
+
+    **open_url**: Open a URL in the default browser.
+    - Parameters: url (required, string) — must start with http:// or https://
+    - Use for: opening any website, deep links, web apps
+
+    **click_desktop**: Click at screen coordinates on the desktop (for apps without AppleScript support).
+    - Parameters: x (required, int), y (required, int) — screen coordinates in points
+    - Requires: cliclick installed via `brew install cliclick`
+    - Use AFTER taking a screenshot to identify coordinates
+
+    **type_desktop**: Type text at the current cursor position on the desktop.
+    - Parameters: text (required, string, max 500 chars)
+    - Requires: cliclick installed via `brew install cliclick`
+    - Use AFTER clicking the target input field with click_desktop
+
+    **browser_action**: Control a browser tab via Playwright (headless Chrome).
+    - Parameters: action (required), url (optional), selector (optional), text (optional)
+    - Actions:
+      - `navigate` + url → open URL, returns page title
+      - `click` + selector (+ optional url) → click a CSS selector
+      - `type` + selector + text (+ optional url) → fill an input field
+      - `screenshot` (+ optional url) → take screenshot, returns file path
+      - `get_text` + selector (+ optional url) → extract text from element
+    - Requires: Node.js + `npm install -g playwright && npx playwright install chromium`
+    - Use for: filling forms, extracting web content, automating any website
 
     **CRITICAL — When to use tools proactively:**
     The <user_facts> section above only contains a SAMPLE of {user_name}'s memories. The full set is in the database.
