@@ -25,7 +25,7 @@ class AssistantSettings {
     private let defaultAnalysisDelay = 60 // seconds (1 minute)
     private let defaultScreenAnalysisEnabled = true
     private let defaultTranscriptionEnabled = true
-    private let defaultTranscriptionLanguage = "en"
+    private let defaultTranscriptionLanguage = "pt"
     private let defaultTranscriptionAutoDetect = true
     private let defaultTranscriptionVocabulary: [String] = []
     private let defaultVadGateEnabled = false
