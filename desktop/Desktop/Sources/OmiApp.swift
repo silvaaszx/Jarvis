@@ -1077,19 +1077,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
-    // Encerrar o wake word daemon Python ao sair do app
-    // (launchd tem KeepAlive: false, então não reinicia automaticamente)
-    let killWakeWord = Process()
-    killWakeWord.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-    killWakeWord.arguments = ["-f", "jarvis_wake_word.py"]
-    try? killWakeWord.run()
-    log("AppDelegate: wake word daemon encerrado")
+    // Para os daemons Python via launchctl (mais limpo) e pkill (garantia).
+    // waitUntilExit() garante que os processos morreram antes do app encerrar.
+    func stopDaemon(label: String, scriptName: String) {
+      let stop = Process()
+      stop.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+      stop.arguments = ["stop", label]
+      stop.standardOutput = FileHandle.nullDevice
+      stop.standardError = FileHandle.nullDevice
+      try? stop.run()
+      stop.waitUntilExit()
 
-    let killSoundTrigger = Process()
-    killSoundTrigger.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-    killSoundTrigger.arguments = ["-f", "jarvis_sound_trigger.py"]
-    try? killSoundTrigger.run()
-    log("AppDelegate: sound trigger daemon encerrado")
+      let kill = Process()
+      kill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+      kill.arguments = ["-f", scriptName]
+      kill.standardOutput = FileHandle.nullDevice
+      kill.standardError = FileHandle.nullDevice
+      try? kill.run()
+      kill.waitUntilExit()
+      log("AppDelegate: \(label) encerrado")
+    }
+
+    stopDaemon(label: "com.jarvis.wakeword",      scriptName: "jarvis_wake_word.py")
+    stopDaemon(label: "com.jarvis.soundtrigger",  scriptName: "jarvis_sound_trigger.py")
+    stopDaemon(label: "com.jarvis.morning",       scriptName: "jarvis_morning.py")
 
     // Mark clean exit so crash detection works on next launch
     UserDefaults.standard.set(true, forKey: "lastSessionCleanExit")
