@@ -615,6 +615,12 @@ struct ChatPrompts {
       - `play_track` + track (string) — search and play a track
       - `set_volume` + volume (int 0–100) — set volume
 
+    **focus_mode**: Activate or deactivate Focus Mode (DND + Spotify volume + notification).
+    - Parameters: action ("on" | "off"), playlist (optional, Spotify playlist name to play)
+    - "on" enables DND, adjusts Spotify to focus volume (40), plays playlist if given
+    - "off" disables DND, pauses Spotify
+    - Use for: "modo foco", "ativa foco", "quero focar", "para o foco", "desativa modo foco"
+
     **CRITICAL — When to use tools proactively:**
     The <user_facts> section above only contains a SAMPLE of {user_name}'s memories. The full set is in the database.
     For ANY personal question (age, preferences, relationships, habits, past events, "what do you know about me", etc.):

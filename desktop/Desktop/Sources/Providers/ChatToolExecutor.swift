@@ -177,6 +177,9 @@ class ChatToolExecutor {
     case "send_email":
       return await executeSendEmail(toolCall.arguments)
 
+    case "focus_mode":
+      return await executeFocusMode(toolCall.arguments)
+
     // Backend RAG tools — call Python backend /v1/tools/* endpoints
     case "get_conversations":
       return await executeBackendTool(toolCall)
@@ -2079,6 +2082,72 @@ class ChatToolExecutor {
     default:
       return "Error: unknown command '\(command)'. Use: play | pause | next | previous | play_track | get_current | set_volume"
     }
+  }
+
+  // MARK: - Focus Mode
+
+  /// Ativa/desativa o Modo Foco: DND ligado, Spotify com playlist, notificações silenciadas.
+  /// args: action ("on" | "off"), playlist (opcional, nome da playlist Spotify)
+  private static func executeFocusMode(_ args: [String: Any]) async -> String {
+    let action = (args["action"] as? String ?? "on").lowercased()
+
+    if action == "off" {
+      // Desliga DND via osascript
+      let dndOff = """
+        tell application "System Events"
+          tell process "Control Center"
+            try
+              key code 100 using {command down, option down}
+            end try
+          end tell
+        end tell
+        """
+      _ = await runProcess("/usr/bin/osascript", args: ["-e", dndOff])
+
+      // Pausa Spotify
+      _ = await runProcess("/usr/bin/osascript", args: ["-e", "tell application \"Spotify\" to pause"])
+
+      return "Modo Foco desativado. Notificações restauradas."
+    }
+
+    // Modo Foco ON
+    var results: [String] = []
+
+    // 1. Liga DND via Shortcuts (mais confiável que simular cliques)
+    let dndScript = """
+      tell application "Shortcuts"
+        run shortcut "Focus Mode On"
+      end tell
+      """
+    let dndResult = await runProcess("/usr/bin/osascript", args: ["-e", dndScript])
+    // Fallback: tenta via defaults se o shortcut não existir
+    if dndResult.lowercased().contains("error") {
+      _ = await runProcess("/usr/bin/defaults", args: ["write", "com.apple.ncprefs", "dnd_prefs", "-dict-add", "userPref", "1"])
+    }
+    results.append("DND ativado")
+
+    // 2. Spotify — toca playlist de foco se fornecida, senão continua o que estava tocando
+    if let playlist = args["playlist"] as? String, !playlist.isEmpty {
+      let escaped = playlist.replacingOccurrences(of: "\"", with: "\\\"")
+      let spotScript = """
+        tell application "Spotify"
+          play track "spotify:search:\(escaped)"
+          set sound volume to 40
+        end tell
+        """
+      _ = await runProcess("/usr/bin/osascript", args: ["-e", spotScript])
+      results.append("Spotify: \(playlist)")
+    } else {
+      // Somente ajusta volume para 40 e continua
+      _ = await runProcess("/usr/bin/osascript", args: ["-e", "tell application \"Spotify\" to set sound volume to 40"])
+      results.append("Spotify: volume ajustado para foco")
+    }
+
+    // 3. Notificação de confirmação
+    let notif = "display notification \"Modo Foco ativo. Bom trabalho, Sr. Matheus.\" with title \"JARVIS\" sound name \"Morse\""
+    _ = await runProcess("/usr/bin/osascript", args: ["-e", notif])
+
+    return "Modo Foco ativado: " + results.joined(separator: ", ")
   }
 
   // MARK: - Process Runner
