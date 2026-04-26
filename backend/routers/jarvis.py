@@ -1,14 +1,22 @@
+import asyncio
 import base64
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import AsyncGenerator, Literal
+from typing import AsyncGenerator, Literal, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from utils.llm.gemini_client import jarvis_chat, jarvis_chat_stream
+from utils.llm.jarvis_memory import (
+    build_memory_context,
+    extract_and_save_facts,
+    get_facts,
+    get_recent_turns,
+    save_turn,
+)
 from utils.other import endpoints as auth
 
 router = APIRouter()
@@ -21,7 +29,8 @@ class JarvisHistoryTurn(BaseModel):
 
 class JarvisChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000)
-    history: list[JarvisHistoryTurn] = Field(default_factory=list, max_length=100)
+    history: list[JarvisHistoryTurn] = Field(default_factory=list, max_length=20)
+    session_id: Optional[str] = Field(default="default", max_length=64)
 
 
 class JarvisChatResponse(BaseModel):
@@ -72,7 +81,24 @@ async def send_jarvis_message(
     data: JarvisChatRequest,
     uid: str = Depends(auth.get_current_user_uid),
 ):
-    _ = uid  # auth required; uid reserved for conversation persistence in next phase
+    session_id = data.session_id or "default"
     history = [turn.model_dump() for turn in data.history]
-    response = await jarvis_chat(message=data.message, history=history)
+
+    # Busca memória e fatos em paralelo (Fase 5 RAG)
+    turns, facts = await asyncio.gather(
+        get_recent_turns(uid, session_id),
+        get_facts(uid),
+    )
+    memory_context = build_memory_context(turns, facts)
+
+    response = await jarvis_chat(
+        message=data.message,
+        history=history,
+        memory_context=memory_context,
+    )
+
+    # Fire-and-forget: persiste o turno e extrai fatos sem bloquear a resposta
+    asyncio.ensure_future(save_turn(uid, session_id, data.message, response))
+    asyncio.ensure_future(extract_and_save_facts(uid, data.message, response))
+
     return JarvisChatResponse(response=response)
