@@ -45,9 +45,18 @@ def get_gemini_client() -> genai.Client:
     return _client
 
 
-async def jarvis_chat_stream(message: str, history: Optional[list] = None):
+async def jarvis_chat_stream(
+    message: str,
+    history: Optional[list] = None,
+    memory_context: str = "",
+):
     """Stream Jarvis response token-by-token. Yields text chunks."""
     client = get_gemini_client()
+
+    system = JARVIS_SYSTEM_PROMPT
+    if memory_context:
+        system = f"{JARVIS_SYSTEM_PROMPT}\n\n{memory_context}"
+
     contents = []
     for turn in history or []:
         role = turn.get("role", "user")
@@ -59,18 +68,27 @@ async def jarvis_chat_stream(message: str, history: Optional[list] = None):
     async for chunk in await client.aio.models.generate_content_stream(
         model=GEMINI_MODEL,
         contents=contents,
-        config=types.GenerateContentConfig(system_instruction=JARVIS_SYSTEM_PROMPT),
+        config=types.GenerateContentConfig(system_instruction=system),
     ):
         if chunk.text:
             yield chunk.text
 
 
-async def jarvis_chat(message: str, history: Optional[list] = None) -> str:
+async def jarvis_chat(
+    message: str,
+    history: Optional[list] = None,
+    memory_context: str = "",
+) -> str:
     """
     Send a message to Jarvis (Gemini 2.5 Flash) and return the response.
     history: list of {"role": "user"|"model", "parts": [str]}
+    memory_context: bloco de fatos + histórico injetado pelo jarvis_memory module
     """
     client = get_gemini_client()
+
+    system = JARVIS_SYSTEM_PROMPT
+    if memory_context:
+        system = f"{JARVIS_SYSTEM_PROMPT}\n\n{memory_context}"
 
     contents = []
     for turn in history or []:
@@ -83,6 +101,6 @@ async def jarvis_chat(message: str, history: Optional[list] = None) -> str:
     response = await client.aio.models.generate_content(
         model=GEMINI_MODEL,
         contents=contents,
-        config=types.GenerateContentConfig(system_instruction=JARVIS_SYSTEM_PROMPT),
+        config=types.GenerateContentConfig(system_instruction=system),
     )
     return response.text
