@@ -2,7 +2,11 @@
 Tools for accessing Gmail messages.
 """
 
+import base64
 import contextvars
+import email.mime.text
+import email.mime.multipart
+import email.utils
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
@@ -122,16 +126,12 @@ def parse_gmail_message(message: dict) -> dict:
             if part.get('mimeType') == 'text/plain':
                 data = part.get('body', {}).get('data', '')
                 if data:
-                    import base64
-
                     body_text = base64.urlsafe_b64decode(data).decode('utf-8', errors='ignore')
                     break
             elif part.get('mimeType') == 'text/html':
                 # Fallback to HTML if plain text not available
                 data = part.get('body', {}).get('data', '')
                 if data:
-                    import base64
-
                     body_text = base64.urlsafe_b64decode(data).decode('utf-8', errors='ignore')
                     break
     else:
@@ -139,8 +139,6 @@ def parse_gmail_message(message: dict) -> dict:
         if payload.get('mimeType') == 'text/plain':
             data = payload.get('body', {}).get('data', '')
             if data:
-                import base64
-
                 body_text = base64.urlsafe_b64decode(data).decode('utf-8', errors='ignore')
 
     # Parse date
@@ -148,9 +146,7 @@ def parse_gmail_message(message: dict) -> dict:
     date_parsed = None
     if date_str:
         try:
-            from email.utils import parsedate_to_datetime
-
-            date_parsed = parsedate_to_datetime(date_str)
+            date_parsed = email.utils.parsedate_to_datetime(date_str)
         except:
             pass
 
@@ -164,6 +160,48 @@ def parse_gmail_message(message: dict) -> dict:
         'snippet': message.get('snippet', ''),
         'body': body_text,
     }
+
+
+async def send_gmail_message(
+    access_token: str,
+    to: str,
+    subject: str,
+    body: str,
+    reply_to_message_id: Optional[str] = None,
+    thread_id: Optional[str] = None,
+) -> dict:
+    """
+    Envia ou responde um email via Gmail API.
+
+    Args:
+        access_token: Google access token
+        to: Email do destinatário
+        subject: Assunto do email
+        body: Corpo em texto simples
+        reply_to_message_id: Message-ID header para reply (opcional)
+        thread_id: Gmail thread ID para reply threading (opcional)
+
+    Returns:
+        Dict da mensagem enviada com id e threadId
+    """
+    msg = email.mime.text.MIMEText(body, 'plain', 'utf-8')
+    msg['To'] = to
+    msg['Subject'] = subject
+    if reply_to_message_id:
+        msg['In-Reply-To'] = reply_to_message_id
+        msg['References'] = reply_to_message_id
+
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+    payload: dict = {'raw': raw}
+    if thread_id:
+        payload['threadId'] = thread_id
+
+    return await google_api_request(
+        'POST',
+        'https://www.googleapis.com/gmail/v1/users/me/messages/send',
+        access_token,
+        body=payload,
+    )
 
 
 @tool
