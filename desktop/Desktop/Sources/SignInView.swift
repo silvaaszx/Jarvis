@@ -15,12 +15,11 @@ struct SignInView: View {
 
                 // Logo/Title
                 VStack(spacing: 16) {
-                    // Jarvis logo
-                    Image(systemName: "j.circle.fill")
+                    // Jarvis logo — usa o ícone real do app (bolinhas)
+                    Image(nsImage: NSApp.applicationIconImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 64, height: 64)
-                        .foregroundColor(OmiColors.purplePrimary)
 
                     Text("jarvis")
                         .scaledFont(size: 48, weight: .bold)
