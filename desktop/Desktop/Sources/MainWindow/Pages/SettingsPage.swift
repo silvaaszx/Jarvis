@@ -267,7 +267,7 @@ struct SettingsContentView: View {
   @AppStorage("conversationsCompactView") private var conversationsCompactView = true
 
   // AI Chat settings
-  @AppStorage("chatBridgeMode") private var chatBridgeMode: String = "piMono"
+  @AppStorage("chatBridgeMode") private var chatBridgeMode: String = "acp"
   @AppStorage("askModeEnabled") private var askModeEnabled = false
   @AppStorage("claudeMdEnabled") private var claudeMdEnabled = true
   @AppStorage("projectClaudeMdEnabled") private var projectClaudeMdEnabled = true

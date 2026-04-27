@@ -1355,7 +1355,7 @@ struct OnboardingChatView: View {
 
     explorationTask = Task {
       do {
-        let bridge = ACPBridge(passApiKey: true, harnessMode: "piMono")
+        let bridge = ACPBridge(passApiKey: true, harnessMode: "acp")
         await MainActor.run { explorationBridge = bridge }
         try await bridge.start()
 

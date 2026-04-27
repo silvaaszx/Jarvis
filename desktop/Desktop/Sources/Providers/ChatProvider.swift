@@ -509,10 +509,10 @@ A screenshot may be attached — use it silently only if relevant. Never mention
     // with the user's Firebase ID token). Claude Code remains as an opt-in harness that
     // uses the user's own API key/env.
     private lazy var acpBridge: ACPBridge = {
-        let mode = UserDefaults.standard.string(forKey: "chatBridgeMode") ?? BridgeMode.piMono.rawValue
+        let mode = UserDefaults.standard.string(forKey: "chatBridgeMode") ?? BridgeMode.acp.rawValue
         let useOmiKey = mode != BridgeMode.userClaude.rawValue
-        let harness = mode == BridgeMode.piMono.rawValue ? "piMono" : "acp"
-        return ACPBridge(passApiKey: useOmiKey, harnessMode: harness)
+        // piMono requer CLI `pi` (Based Hardware) — não disponível no Jarvis. Sempre usa acp.
+        return ACPBridge(passApiKey: useOmiKey, harnessMode: "acp")
     }()
     private var acpBridgeStarted = false
 
@@ -520,8 +520,9 @@ A screenshot may be attached — use it silently only if relevant. Never mention
         case omiAI = "agentSDK"
         case userClaude = "claudeCode"
         case piMono = "piMono"
+        case acp = "acp"
     }
-    @AppStorage("chatBridgeMode") var bridgeMode: String = BridgeMode.piMono.rawValue
+    @AppStorage("chatBridgeMode") var bridgeMode: String = BridgeMode.acp.rawValue
 
     /// Whether the ACP bridge requires authentication (shown as sheet in UI)
     @Published var isClaudeAuthRequired = false
