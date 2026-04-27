@@ -26,13 +26,21 @@ def get_user(uid: str):
 
 def verify_token(token: str) -> str:
     """
-    Verify a Supabase JWT and return the uid.
-    Falls back to ADMIN_KEY for internal use.
+    Verifica o token e retorna o uid.
+    Ordem: ADMIN_KEY → Firebase ID Token (desktop) → Supabase JWT (mobile/web).
     """
     admin_key = os.getenv('ADMIN_KEY')
     if admin_key and token.startswith(admin_key):
         return token[len(admin_key):]
 
+    # Tenta Firebase ID Token primeiro (usado pelo app desktop macOS)
+    try:
+        decoded = auth.verify_id_token(token)
+        return decoded['uid']
+    except Exception:
+        pass
+
+    # Fallback: Supabase JWT (usado pelo app mobile/web)
     try:
         supabase = get_supabase()
         user = supabase.auth.get_user(token)
