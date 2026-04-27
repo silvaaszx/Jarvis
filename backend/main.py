@@ -7,6 +7,20 @@ load_dotenv()  # No-op if .env doesn't exist (production); loads local dev secre
 
 logging.basicConfig(level=logging.INFO)
 
+
+def _validate_startup_env():
+    """Falha rápido no Railway se variáveis críticas estiverem ausentes."""
+    critical = {
+        'SERVICE_ACCOUNT_JSON': 'credenciais Firestore/GCS',
+        'FIREBASE_API_KEY': 'Firebase Auth REST API (login OAuth)',
+    }
+    missing = [f'{var} ({desc})' for var, desc in critical.items() if not os.getenv(var)]
+    if missing:
+        logging.warning('⚠️  Variáveis ausentes — algumas funcionalidades podem falhar: %s', ', '.join(missing))
+
+
+_validate_startup_env()
+
 from fastapi import FastAPI
 
 from routers import (

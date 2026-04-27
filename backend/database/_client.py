@@ -7,10 +7,15 @@ import uuid
 from google.cloud import firestore
 
 if os.environ.get('SERVICE_ACCOUNT_JSON'):
-    service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
-    with open('google-credentials.json', 'w') as f:
+    try:
+        service_account_info = json.loads(os.environ['SERVICE_ACCOUNT_JSON'])
+    except json.JSONDecodeError as e:
+        logging.error('SERVICE_ACCOUNT_JSON inválido — verifique as variáveis de ambiente no Railway: %s', e)
+        raise RuntimeError('SERVICE_ACCOUNT_JSON não é um JSON válido') from e
+    _creds_path = '/tmp/google-credentials.json'
+    with open(_creds_path, 'w') as f:
         json.dump(service_account_info, f)
-    os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', 'google-credentials.json')
+    os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', _creds_path)
 
 _db = None
 

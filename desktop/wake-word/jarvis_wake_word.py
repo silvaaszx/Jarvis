@@ -13,6 +13,7 @@ Requirements:
 On first run, openWakeWord downloads the "hey_jarvis" ONNX model (~30MB).
 """
 
+import signal
 import subprocess
 import sys
 import time
@@ -98,10 +99,19 @@ def run():
         frames_per_buffer=CHUNK_SIZE,
     )
 
+    _stop = threading.Event()
+
+    def _shutdown(signum, frame):
+        print(f"\nJarvis wake word: sinal {signum} recebido, encerrando...")
+        _stop.set()
+
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
+
     last_trigger = 0.0
 
     try:
-        while True:
+        while not _stop.is_set():
             raw = stream.read(CHUNK_SIZE, exception_on_overflow=False)
             audio = np.frombuffer(raw, dtype=np.int16)
 

@@ -12,6 +12,7 @@ Requisitos:
 Sem librosa — usa scipy.signal (mais leve, já vem com numpy).
 """
 
+import signal
 import subprocess
 import sys
 import time
@@ -168,8 +169,17 @@ def run():
     clap = ClapDetector()
     whistle = WhistleDetector()
 
+    _stop = threading.Event()
+
+    def _shutdown(signum, frame):
+        print(f"\nJarvis Sound Trigger: sinal {signum} recebido, encerrando...")
+        _stop.set()
+
+    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
+
     try:
-        while True:
+        while not _stop.is_set():
             raw = stream.read(CHUNK_SIZE, exception_on_overflow=False)
             audio = np.frombuffer(raw, dtype=np.int16) / 32768.0  # normalizar -1..1
             clap.feed(audio)

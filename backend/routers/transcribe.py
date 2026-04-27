@@ -2922,19 +2922,33 @@ async def web_listen_handler(
     custom_stt_mode = CustomSttMode.enabled if custom_stt == 'enabled' else CustomSttMode.disabled
     onboarding_mode = onboarding == 'enabled'
 
-    await _stream_handler(
-        websocket,
-        uid,
-        language,
-        sample_rate,
-        codec,
-        channels,
-        include_speech_profile,
-        None,
-        conversation_timeout=conversation_timeout,
-        source=source,
-        custom_stt_mode=custom_stt_mode,
-        onboarding_mode=onboarding_mode,
-        call_id=call_id,
-    )
+    # Firebase ID tokens expiram após 1h — encerrar sessão antes disso para evitar auth stale
+    _AUTH_SESSION_MAX_SECS = 3500  # 3500s < 3600s (margem de 100s antes do token expirar)
+
+    try:
+        await asyncio.wait_for(
+            _stream_handler(
+                websocket,
+                uid,
+                language,
+                sample_rate,
+                codec,
+                channels,
+                include_speech_profile,
+                None,
+                conversation_timeout=conversation_timeout,
+                source=source,
+                custom_stt_mode=custom_stt_mode,
+                onboarding_mode=onboarding_mode,
+                call_id=call_id,
+            ),
+            timeout=_AUTH_SESSION_MAX_SECS,
+        )
+    except asyncio.TimeoutError:
+        logger.info(f"web_listen_handler: sessão expirada para {uid} — solicitando reconexão")
+        try:
+            await websocket.send_json({"type": "session_expired", "message": "Token expirado — reconecte para continuar"})
+            await websocket.close(code=4001, reason="Session expired")
+        except Exception:
+            pass
     logger.info(f"web_listen_handler ended {uid}")
