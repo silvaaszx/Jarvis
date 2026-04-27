@@ -3025,6 +3025,8 @@ class AppState: ObservableObject {
 extension Notification.Name {
   /// Posted when the current app instance should fully clear its own onboarding state.
   static let resetOnboardingRequested = Notification.Name("resetOnboardingRequested")
+  /// Posted when Firebase session expires mid-use so the UI can show a toast before navigating to sign-in.
+  static let jarvisSessionExpired = Notification.Name("jarvisSessionExpired")
   /// Posted when the system wakes from sleep
   static let systemDidWake = Notification.Name("systemDidWake")
   /// Posted when the screen is locked

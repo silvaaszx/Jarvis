@@ -94,9 +94,21 @@ struct OnboardingPermissionStepView: View {
         .frame(maxWidth: 540, alignment: .leading)
 
         if isGranted {
-          Text("Permission granted. Continuing…")
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(OmiColors.textTertiary)
+          if hasAutoAdvanced {
+            Text("Permission granted. Continuing…")
+              .font(.system(size: 13, weight: .medium))
+              .foregroundColor(OmiColors.textTertiary)
+          } else {
+            VStack(alignment: .leading, spacing: 8) {
+              Text("Permission already granted.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(OmiColors.success)
+              Button("Continue") {
+                onContinue()
+              }
+              .buttonStyle(OnboardingCardButtonStyle(isPrimary: true))
+            }
+          }
         } else {
           Button(isRequesting ? "Waiting for macOS…" : primaryActionLabel) {
             Task {
@@ -117,9 +129,6 @@ struct OnboardingPermissionStepView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .onReceive(timer) { _ in
         refreshPermissionState()
-        if isGranted {
-          scheduleAutoAdvance()
-        }
       }
       .onChange(of: scenePhase) { _, newPhase in
         guard newPhase == .active else { return }
@@ -140,9 +149,6 @@ struct OnboardingPermissionStepView: View {
         screenRecordingRefreshTask?.cancel()
         coordinator.clearLastActionError()
         refreshPermissionState()
-        if isGranted {
-          scheduleAutoAdvance()
-        }
       }
     }
   }

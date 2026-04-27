@@ -921,10 +921,16 @@ class AuthService {
             if isDefinitiveAuthFailure {
                 NSLog("OMI AUTH: Definitive auth failure - clearing tokens and session")
                 clearTokens()
-                // Also clear auth state so the UI shows sign-in instead of a ghost session
-                // where auth_isSignedIn=true but no valid tokens exist.
-                isSignedIn = false
-                saveAuthState(isSignedIn: false, email: nil, userId: nil)
+                // Post notification so the UI can show a "session expired" alert before
+                // navigating to SignInView — prevents the user seeing a silent "crash".
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .jarvisSessionExpired, object: nil)
+                }
+                // Delay sign-out by 1.5s so the notification toast has time to appear.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    self?.isSignedIn = false
+                    self?.saveAuthState(isSignedIn: false, email: nil, userId: nil)
+                }
             }
             throw AuthError.notSignedIn
         }
