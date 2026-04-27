@@ -368,6 +368,12 @@ struct SettingsContentView: View {
   @State private var calendarSyncError: String?
   @State private var calendarLastSynced: Date?
 
+  // Google OAuth states
+  @State private var isGoogleConnected: Bool = false
+  @State private var isConnectingGoogle: Bool = false
+  @State private var isCheckingGoogleStatus: Bool = false
+  @State private var googleConnectError: String?
+
   @State private var isDeletingAccount: Bool = false
   @State private var deleteAccountError: String?
 
@@ -3091,6 +3097,9 @@ struct SettingsContentView: View {
       advancedCategoryHeader(title: "Developer API Keys", icon: "key")
       developerKeysSubsection
 
+      advancedCategoryHeader(title: "Google (Gmail + Calendar)", icon: "g.circle.fill")
+      googleConnectSubsection
+
       advancedCategoryHeader(title: "Dev Tools", icon: "hammer")
       devToolsSubsection
     }
@@ -5151,6 +5160,112 @@ struct SettingsContentView: View {
       calendarSyncError = error.localizedDescription
     }
     isReadingCalendar = false
+  }
+
+  // MARK: - Google Connect Subsection
+
+  private var googleConnectSubsection: some View {
+    VStack(spacing: 20) {
+      settingsCard(settingId: "advanced.google.connect") {
+        HStack(spacing: 16) {
+          Image(systemName: "g.circle.fill")
+            .scaledFont(size: 16)
+            .foregroundColor(OmiColors.textSecondary)
+            .frame(width: 24, height: 24)
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Conectar Google")
+              .scaledFont(size: 16, weight: .semibold)
+              .foregroundColor(OmiColors.textPrimary)
+
+            if isGoogleConnected {
+              Text("Conta Google conectada — Gmail e Calendar disponíveis para o Jarvis")
+                .scaledFont(size: 13)
+                .foregroundColor(.green)
+            } else {
+              Text("Autorize o acesso ao Gmail e Google Calendar via OAuth")
+                .scaledFont(size: 13)
+                .foregroundColor(OmiColors.textTertiary)
+            }
+          }
+
+          Spacer()
+
+          Button(action: {
+            Task { await connectGoogle() }
+          }) {
+            if isConnectingGoogle {
+              ProgressView()
+                .scaleEffect(0.7)
+                .frame(width: 90, height: 22)
+            } else {
+              Text(isGoogleConnected ? "Reconectar" : "Conectar")
+                .scaledFont(size: 13, weight: .medium)
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(
+                  RoundedRectangle(cornerRadius: 6)
+                    .fill(isGoogleConnected ? OmiColors.textSecondary : OmiColors.purplePrimary)
+                )
+            }
+          }
+          .buttonStyle(.plain)
+          .disabled(isConnectingGoogle)
+        }
+      }
+
+      if let error = googleConnectError {
+        settingsCard(settingId: "advanced.google.error") {
+          HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+              .foregroundColor(.orange)
+            Text(error)
+              .scaledFont(size: 13)
+              .foregroundColor(OmiColors.textSecondary)
+              .lineLimit(3)
+            Spacer()
+          }
+        }
+      }
+    }
+    .task {
+      await checkGoogleConnectionStatus()
+    }
+  }
+
+  private func connectGoogle() async {
+    isConnectingGoogle = true
+    googleConnectError = nil
+
+    do {
+      let oauthUrl = try await APIClient.shared.getGoogleOAuthUrl()
+      if let url = URL(string: oauthUrl) {
+        await MainActor.run {
+          NSWorkspace.shared.open(url)
+        }
+        // Aguarda o usuário completar o fluxo OAuth e verifica novamente
+        try await Task.sleep(nanoseconds: 3_000_000_000)
+        await checkGoogleConnectionStatus()
+      } else {
+        googleConnectError = "URL OAuth inválida recebida do servidor"
+      }
+    } catch {
+      googleConnectError = error.localizedDescription
+    }
+
+    isConnectingGoogle = false
+  }
+
+  private func checkGoogleConnectionStatus() async {
+    isCheckingGoogleStatus = true
+    do {
+      isGoogleConnected = try await APIClient.shared.getGoogleConnectionStatus()
+    } catch {
+      // Silencia erros de status — endpoint pode não existir ainda
+      isGoogleConnected = false
+    }
+    isCheckingGoogleStatus = false
   }
 
   private var relativeDateFormatter: DateFormatter {

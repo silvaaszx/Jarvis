@@ -4951,4 +4951,28 @@ extension APIClient {
       attendees: attendees, location: location)
     return try await post("v1/tools/calendar-google", body: body, customBaseURL: nil)
   }
+
+  // MARK: - Google OAuth
+
+  struct GoogleOAuthUrlResponse: Decodable {
+    let url: String
+  }
+
+  /// Retorna a URL de autorização OAuth do Google para Gmail + Calendar.
+  func getGoogleOAuthUrl() async throws -> String {
+    let response: GoogleOAuthUrlResponse = try await get(
+      "v1/integrations/google_calendar/oauth-url")
+    return response.url
+  }
+
+  struct GoogleConnectionStatusResponse: Decodable {
+    let connected: Bool
+  }
+
+  /// Verifica se o usuário já autorizou o Google OAuth.
+  func getGoogleConnectionStatus() async throws -> Bool {
+    let response: GoogleConnectionStatusResponse = try await get(
+      "v1/integrations/google_calendar/status")
+    return response.connected
+  }
 }
