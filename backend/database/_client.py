@@ -4,6 +4,8 @@ import logging
 import os
 import uuid
 
+import firebase_admin
+from firebase_admin import credentials as firebase_credentials
 from google.cloud import firestore
 
 if os.environ.get('SERVICE_ACCOUNT_JSON'):
@@ -16,6 +18,20 @@ if os.environ.get('SERVICE_ACCOUNT_JSON'):
     with open(_creds_path, 'w') as f:
         json.dump(service_account_info, f)
     os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', _creds_path)
+
+# Inicializa Firebase Admin SDK (necessário para auth.verify_id_token no desktop)
+try:
+    firebase_admin.get_app()
+except ValueError:
+    # App ainda não inicializado — usa GOOGLE_APPLICATION_CREDENTIALS (já setado acima)
+    try:
+        if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
+            cred = firebase_credentials.Certificate(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
+            firebase_admin.initialize_app(cred)
+        else:
+            firebase_admin.initialize_app()  # usa ADC
+    except Exception as e:
+        logging.warning('Firebase Admin SDK não pôde ser inicializado: %s', e)
 
 _db = None
 
