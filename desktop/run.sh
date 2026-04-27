@@ -285,6 +285,13 @@ if [ -f "$BACKEND_DIR/.env" ]; then
     set -a; source "$BACKEND_DIR/.env"; set +a
 fi
 
+# Carrega root .env para vars do app (Fish Audio, ElevenLabs, etc.)
+# O Backend-Rust/.env cobre o backend; o root .env cobre o app Swift
+ROOT_ENV="$(cd "$(dirname "$0")/.." && pwd)/.env"
+if [ -f "$ROOT_ENV" ]; then
+    set -a; source "$ROOT_ENV"; set +a
+fi
+
 # Read backend PORT from env (default: 10201, never use 8080)
 BACKEND_PORT="${PORT:-10201}"
 export PORT="$BACKEND_PORT"
