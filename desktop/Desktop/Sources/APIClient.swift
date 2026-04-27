@@ -4854,4 +4854,101 @@ extension APIClient {
     let body = UpdateActionItemRequest(completed: completed, description: description, dueAt: dueAt)
     return try await patch("v1/tools/action-items/\(id)", body: body, customBaseURL: nil)
   }
+
+  // MARK: - Gmail Tools
+
+  struct GmailReadRequest: Encodable {
+    let maxResults: Int
+    let query: String?
+    let label: String?
+
+    enum CodingKeys: String, CodingKey {
+      case maxResults = "max_results"
+      case query
+      case label
+    }
+  }
+
+  struct GmailSendRequest: Encodable {
+    let to: String
+    let subject: String
+    let body: String
+    let replyToMessageId: String?
+    let threadId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case to
+      case subject
+      case body
+      case replyToMessageId = "reply_to_message_id"
+      case threadId = "thread_id"
+    }
+  }
+
+  func toolGmailRead(
+    query: String? = nil, maxResults: Int = 10, label: String? = nil
+  ) async throws -> ToolResponse {
+    let body = GmailReadRequest(maxResults: maxResults, query: query, label: label)
+    return try await post("v1/tools/gmail/read", body: body, customBaseURL: nil)
+  }
+
+  func toolGmailSend(
+    to: String, subject: String, body: String,
+    replyToMessageId: String? = nil, threadId: String? = nil
+  ) async throws -> ToolResponse {
+    let req = GmailSendRequest(
+      to: to, subject: subject, body: body,
+      replyToMessageId: replyToMessageId, threadId: threadId)
+    return try await post("v1/tools/gmail/send", body: req, customBaseURL: nil)
+  }
+
+  // MARK: - Google Calendar Tools
+
+  struct CalendarGoogleActionRequest: Encodable {
+    let action: String
+    let eventId: String?
+    let title: String?
+    let start: String?
+    let end: String?
+    let description: String?
+    let attendees: [String]?
+    let location: String?
+
+    enum CodingKeys: String, CodingKey {
+      case action
+      case eventId = "event_id"
+      case title
+      case start
+      case end
+      case description
+      case attendees
+      case location
+    }
+  }
+
+  func toolCalendarGoogleRead(
+    startDate: String? = nil, endDate: String? = nil,
+    limit: Int = 10, query: String? = nil
+  ) async throws -> ToolResponse {
+    var params = "v1/tools/calendar-google?limit=\(limit)"
+    if let s = startDate { params += "&start_date=\(encodeQueryDate(s))" }
+    if let e = endDate { params += "&end_date=\(encodeQueryDate(e))" }
+    if let q = query {
+      let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
+      params += "&query=\(encoded)"
+    }
+    return try await get(params, customBaseURL: nil)
+  }
+
+  func toolCalendarGoogleAction(
+    action: String, eventId: String? = nil, title: String? = nil,
+    start: String? = nil, end: String? = nil, description: String? = nil,
+    attendees: [String]? = nil, location: String? = nil
+  ) async throws -> ToolResponse {
+    let body = CalendarGoogleActionRequest(
+      action: action, eventId: eventId, title: title,
+      start: start, end: end, description: description,
+      attendees: attendees, location: location)
+    return try await post("v1/tools/calendar-google", body: body, customBaseURL: nil)
+  }
 }
