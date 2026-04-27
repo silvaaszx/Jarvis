@@ -484,24 +484,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Start Sentry heartbeat timer (every 5 minutes) to capture breadcrumbs periodically
     startSentryHeartbeat()
 
-    // Activate app and show main window after a brief delay
+    // Activate app and show main window after a brief delay.
+    // Uses frame size (not title) so dev/named builds also match.
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
       log("AppDelegate: Checking windows after 0.2s delay, count=\(NSApp.windows.count)")
       NSApp.activate()
-      var foundOmiWindow = false
-      for window in NSApp.windows {
-        log("AppDelegate: Window title='\(window.title)', isVisible=\(window.isVisible)")
-        if window.title.hasPrefix("Jarvis") {
-          foundOmiWindow = true
-          window.makeKeyAndOrderFront(nil)
-          window.appearance = NSAppearance(named: .darkAqua)
-          // Ensure fullscreen always creates a dedicated Space
+      let foundOmiWindow = self.revealMainWindowIfAvailable()
+      if foundOmiWindow {
+        // Apply fullscreen hint to whichever window was revealed
+        for window in NSApp.windows where window.frame.width > 300 && window.frame.height > 200 {
           window.collectionBehavior.insert(.fullScreenPrimary)
-          log("AppDelegate: Main window shown on launch")
+          break
         }
-      }
-      if !foundOmiWindow {
-        log("AppDelegate: WARNING - 'Jarvis' window not found!")
+        log("AppDelegate: Main window shown on launch")
+      } else {
+        // SwiftUI hasn't created the window yet (e.g. after Quit and Reopen).
+        // Force-open it, then bring it front after SwiftUI has had time to render.
+        log("AppDelegate: Window not found at 0.2s — forcing open via openMainWindow")
+        Self.openMainWindow?()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+          _ = self.revealMainWindowIfAvailable()
+          NSApp.activate()
+          log("AppDelegate: Window reveal retry after openMainWindow")
+        }
       }
     }
 
