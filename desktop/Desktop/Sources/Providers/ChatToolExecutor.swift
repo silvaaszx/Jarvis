@@ -196,6 +196,19 @@ class ChatToolExecutor {
     case "update_action_item":
       return await executeBackendTool(toolCall)
 
+    // Google integrations — via backend Railway
+    case "gmail_read":
+      return await executeBackendTool(toolCall)
+
+    case "gmail_send":
+      return await executeBackendTool(toolCall)
+
+    case "google_calendar_read":
+      return await executeBackendTool(toolCall)
+
+    case "google_calendar_action":
+      return await executeBackendTool(toolCall)
+
     default:
       return "Unknown tool: \(toolCall.name)"
     }
@@ -1436,6 +1449,50 @@ class ChatToolExecutor {
           completed: args["completed"] as? Bool,
           description: args["description"] as? String,
           dueAt: validatedUpdateDueAt
+        )
+        return resp.resultText
+
+      case "gmail_read":
+        let resp = try await api.toolGmailRead(
+          query: args["query"] as? String,
+          maxResults: args["max_results"] as? Int ?? 10,
+          label: args["label"] as? String
+        )
+        return resp.resultText
+
+      case "gmail_send":
+        guard let to = args["to"] as? String, !to.isEmpty else { return "Error: 'to' obrigatório" }
+        guard let subject = args["subject"] as? String else { return "Error: 'subject' obrigatório" }
+        guard let body = args["body"] as? String else { return "Error: 'body' obrigatório" }
+        let resp = try await api.toolGmailSend(
+          to: to,
+          subject: subject,
+          body: body,
+          replyToMessageId: args["reply_to_message_id"] as? String,
+          threadId: args["thread_id"] as? String
+        )
+        return resp.resultText
+
+      case "google_calendar_read":
+        let resp = try await api.toolCalendarGoogleRead(
+          startDate: args["start_date"] as? String,
+          endDate: args["end_date"] as? String,
+          limit: args["limit"] as? Int ?? 10,
+          query: args["query"] as? String
+        )
+        return resp.resultText
+
+      case "google_calendar_action":
+        guard let action = args["action"] as? String else { return "Error: 'action' obrigatório (create/update/delete)" }
+        let resp = try await api.toolCalendarGoogleAction(
+          action: action,
+          eventId: args["event_id"] as? String,
+          title: args["title"] as? String,
+          start: args["start"] as? String,
+          end: args["end"] as? String,
+          description: args["description"] as? String,
+          attendees: args["attendees"] as? [String],
+          location: args["location"] as? String
         )
         return resp.resultText
 
