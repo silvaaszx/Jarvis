@@ -34,7 +34,7 @@ import { resolveSession, needsModelUpdate, filterSessionsToWarm, getRetryDeleteK
 import { fileURLToPath } from "url";
 import { createServer as createNetServer, type Socket } from "net";
 import { tmpdir } from "os";
-import { unlinkSync, appendFileSync } from "fs";
+import { unlinkSync, appendFileSync, statSync, writeFileSync } from "fs";
 import type {
   InboundMessage,
   OutboundMessage,
@@ -1067,13 +1067,22 @@ function handleSessionUpdate(
 
 // --- Error handling ---
 
-/** Write to /tmp/acp-bridge-crash.log as fallback when stderr might be lost */
+/** Write to /tmp/acp-bridge-crash.log as fallback when stderr might be lost.
+ *  Trunca o arquivo se ultrapassar 10MB para evitar loop infinito enchendo disco. */
 function logCrash(msg: string): void {
+  const CRASH_LOG = "/tmp/acp-bridge-crash.log";
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
   try {
+    try {
+      const stat = statSync(CRASH_LOG);
+      if (stat.size > MAX_SIZE) {
+        writeFileSync(CRASH_LOG, ""); // trunca — previne disk exhaustion
+      }
+    } catch { /* arquivo não existe ainda, ok */ }
     const ts = new Date().toISOString();
-    appendFileSync("/tmp/acp-bridge-crash.log", `[${ts}] ${msg}\n`);
+    appendFileSync(CRASH_LOG, `[${ts}] ${msg}\n`);
   } catch {
-    // ignore
+    // ignore — se stderr também falhou, não há como logar
   }
 }
 
@@ -1085,9 +1094,10 @@ process.on("unhandledRejection", (reason) => {
 process.on("uncaughtException", (err) => {
   const code = (err as NodeJS.ErrnoException).code;
   if (code === "EPIPE" || code === "ERR_STREAM_DESTROYED") {
-    logErr(`Caught ${code} in uncaughtException (subprocess pipe closed)`);
-    logCrash(`Caught ${code} (pipe closed)`);
-    return;
+    // Encerra IMEDIATAMENTE — não tenta logar em stderr (que também está quebrado)
+    // pois isso causaria loop infinito gerando GBs de log em /tmp
+    logCrash(`Caught ${code} (pipe closed) — exiting`);
+    process.exit(0);
   }
   logErr(`Uncaught exception: ${err.message}\n${err.stack ?? ""}`);
   logCrash(`Uncaught exception: ${err.message}\n${err.stack ?? ""}`);
